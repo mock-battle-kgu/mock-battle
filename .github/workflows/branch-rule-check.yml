@@ -1,0 +1,31 @@
+name: 브랜치 규칙 검사
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 병합 방향 확인
+        env:
+          HEAD: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          echo "$HEAD → $BASE"
+          if [ "$BASE" = "main" ]; then
+            if [ "$HEAD" = "develop" ] || [[ "$HEAD" =~ ^(release|hotfix)/ ]]; then
+              echo "통과"
+            else
+              echo "::error::main에는 develop, release/*, hotfix/* 브랜치만 병합할 수 있습니다."
+              exit 1
+            fi
+          elif [ "$BASE" = "develop" ]; then
+            if [[ "$HEAD" =~ ^(feature|fix|docs|chore|release|hotfix)/ ]]; then
+              echo "통과"
+            else
+              echo "::error::develop에는 feature/*, fix/*, docs/*, chore/* 형식의 브랜치만 병합할 수 있습니다."
+              exit 1
+            fi
+          fi

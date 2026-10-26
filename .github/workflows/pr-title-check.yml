@@ -1,0 +1,21 @@
+name: PR 제목 규칙 검사
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 제목 형식 확인
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR 제목: $TITLE"
+          if echo "$TITLE" | grep -Eq '^(feat|fix|docs|refactor|test|chore|ci)(\([a-z-]+\))?: .+'; then
+            echo "통과"
+          else
+            echo "::error::PR 제목은 '종류: 설명' 형식이어야 합니다. (feat, fix, docs, refactor, test, chore, ci)"
+            exit 1
+          fi
