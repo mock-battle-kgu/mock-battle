@@ -1,0 +1,52 @@
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+    restart: unless-stopped
+
+  game-server:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+  api-server:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+  market-engine:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+  rabbitmq:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
