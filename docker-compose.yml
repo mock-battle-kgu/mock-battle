@@ -1,0 +1,116 @@
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+    volumes:
+      - nginx-logs:/var/log/nginx
+    restart: unless-stopped
+
+  game-server:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    environment:
+      PORT: 4000
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+      API_URL: http://api-server:3000
+      GAME_DURATION_SEC: 600
+      LOG_DIR: /app/logs
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - game-logs:/app/logs
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api-server:
+        condition: service_started
+    restart: unless-stopped
+
+  api-server:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  market-engine:
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
+      SCENARIO_DIR: /app/scenarios
+    networks:
+      - backend
+    volumes:
+      - ./scenarios:/app/scenarios:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - backend
+    volumes:
+      - mq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - backend
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  db-data:
+  mq-data:
+  game-logs:
+  nginx-logs:
