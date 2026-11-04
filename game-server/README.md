@@ -36,5 +36,5 @@ npm run lint
 | LOG_LEVEL | info | `debug`로 바꾸면 받은 시세도 로그에 출력 |
 
 ## RabbitMQ 약속 (시세 엔진과 맞출 것)
-- exchange 이름 `market`, 타입 `topic`, `durable: false`
+- exchange 이름 `market`, 타입 `topic`, `durable: true`
 - 경로: `market.control`, `market.flow`(게임 서버 → 시세 엔진), `market.tick`, `market.news`(시세 엔진 → 게임 서버)

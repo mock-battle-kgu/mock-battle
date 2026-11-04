@@ -56,7 +56,7 @@ test('정해진 횟수를 모두 실패하면 오류를 던진다', async () => 
 
 test('market exchange를 만들고 tick, news를 구독한다', async () => {
   const { channel } = await connected();
-  expect(channel.assertExchange).toHaveBeenCalledWith(EXCHANGE, 'topic', { durable: false });
+  expect(channel.assertExchange).toHaveBeenCalledWith(EXCHANGE, 'topic', { durable: true });
   expect(channel.bindQueue).toHaveBeenCalledWith('q1', EXCHANGE, KEYS.tick);
   expect(channel.bindQueue).toHaveBeenCalledWith('q1', EXCHANGE, KEYS.news);
 });

@@ -11,7 +11,7 @@ const prices = { GANA: 46000, DARA: 19000, MABA: 33000, SAAH: 71000, JACHA: 1250
 async function main() {
   const connection = await amqp.connect(url);
   const channel = await connection.createChannel();
-  await channel.assertExchange(EXCHANGE, 'topic', { durable: false });
+  await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
   console.log(`fake market → room ${roomId} (Ctrl + C로 종료)`);
 
   let t = 0;

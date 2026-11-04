@@ -39,7 +39,7 @@ class MarketClient {
     this.connection.on('close', () => this.logger?.error('RabbitMQ connection closed'));
 
     this.channel = await this.connection.createChannel();
-    await this.channel.assertExchange(EXCHANGE, 'topic', { durable: false });
+    await this.channel.assertExchange(EXCHANGE, 'topic', { durable: true });
 
     // 게임 서버 전용 임시 큐에 tick, news만 받아온다
     const { queue } = await this.channel.assertQueue('', { exclusive: true });
