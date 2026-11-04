@@ -6,13 +6,6 @@ on:
     branches:
       - develop
       - main
-    # paths:
-    #   - 'api-server/**'
-    #   - 'game-server/**'
-    #   - 'market-engine/**'
-    #   - 'frontend/**'
-    #   - 'docker-compose.yml'
-    #   - '.github/workflows/docker-build.yml'
 
   workflow_dispatch:
 
