@@ -47,7 +47,10 @@ Windows PowerShell:
 ```powershell
 Copy-Item .env.example .env
 ```
-
+Mac/Linux:
+```bash
+cp .env.example .env
+```
 필요한 경우 `.env`의 데이터베이스 및 RabbitMQ 비밀번호를 변경합니다.
 
 ### 4. Docker Compose 실행
