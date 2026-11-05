@@ -26,6 +26,63 @@ scenarios/       연습 모드용 과거 주가 데이터 (볼륨으로 연결)
 docs/            설계 문서, 통신 규칙
 ```
 
+## 실행 방법
+
+### 1. 사전 준비
+- Git
+- Docker Desktop
+- Docker Compose
+
+### 2. 프로젝트 클론
+```bash
+git clone https://github.com/mock-battle-kgu/mock-battle.git
+cd mock-battle
+```
+
+### 3. 환경변수 설정
+
+`.env.example`을 복사하여 `.env` 파일을 생성합니다.
+
+Windows PowerShell:
+```powershell
+Copy-Item .env.example .env
+```
+
+필요한 경우 `.env`의 데이터베이스 및 RabbitMQ 비밀번호를 변경합니다.
+
+### 4. Docker Compose 실행
+
+```bash
+docker compose up -d --build
+```
+
+컨테이너 상태 확인:
+```bash
+docker compose ps
+```
+
+### 5. 서비스 접속
+
+| 서비스 | 주소 |
+|---|---|
+| Nginx | http://localhost |
+| RabbitMQ Management | http://localhost:15672 |
+
+RabbitMQ 초기 로그인 정보는 `.env`에 설정한 `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS`를 사용합니다.
+
+### 6. 종료
+
+```bash
+docker compose down
+```
+
+데이터 볼륨까지 삭제하려면:
+```bash
+docker compose down -v
+```
+- **주의:** 이 명령은 데이터베이스를 포함한 Docker 볼륨을 삭제하므로 저장된 데이터가 모두 사라집니다.
+- **주의:** 현재 일부 애플리케이션 서비스는 초기 구성용 임시 컨테이너입니다. 실제 애플리케이션 실행은 각 서비스의 구현 및 Docker 설정 완료 후 가능합니다.
+
 ## 브랜치 전략 (Git Flow)
 ```
 main          배포용 완성본
