@@ -11,8 +11,7 @@ services:
     restart: unless-stopped
 
   game-server:
-    image: alpine:3.20
-    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    build: ./game-server
     environment:
       PORT: 4000
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
@@ -32,8 +31,7 @@ services:
     restart: unless-stopped
 
   api-server:
-    image: alpine:3.20
-    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    build: ./api-server
     environment:
       PORT: 3000
       DB_HOST: db
@@ -50,8 +48,7 @@ services:
     restart: unless-stopped
 
   market-engine:
-    image: alpine:3.20
-    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    build: ./market-engine
     environment:
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
       SCENARIO_DIR: /app/scenarios
