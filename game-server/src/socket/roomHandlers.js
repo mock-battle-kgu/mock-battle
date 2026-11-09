@@ -2,10 +2,12 @@
 // 결과를 응답(ack)과 room:update 알림으로 돌려준다 (docs/protocol.md 2장)
 const { RoomManager, RoomError } = require('../game/RoomManager');
 
+function broadcastRoom(io, room) {
+  io.to(room.roomId).emit('room:update', RoomManager.publicState(room));
+}
+
 function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
-  const broadcast = (room) => {
-    io.to(room.roomId).emit('room:update', RoomManager.publicState(room));
-  };
+  const broadcast = (room) => broadcastRoom(io, room);
 
   // 응답 형식 통일: 성공 { ok: true, ... } / 실패 { ok: false, code, message }
   const respond = (ack, work) => {
@@ -63,7 +65,7 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
         const room = rooms.startRoom({ roomId: payload.roomId, playerId: socket.data.playerId });
         broadcast(room);
         logger?.info({ roomId: room.roomId }, 'game started');
-        onGameStart(room); // D단계에서 타이머·시장 시작을 여기에 연결
+        onGameStart(room); // 시세 엔진 시작 신호, game:start, 타이머 (GameService)
         return {};
       });
     });
@@ -75,4 +77,4 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
   });
 }
 
-module.exports = { registerRoomHandlers };
+module.exports = { registerRoomHandlers, broadcastRoom };

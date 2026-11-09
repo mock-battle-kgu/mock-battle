@@ -136,3 +136,14 @@ describe('퇴장', () => {
     });
   });
 });
+
+describe('종료와 삭제', () => {
+  test('endRoom은 상태를 ended로, remove는 방을 지운다', () => {
+    const rooms = new RoomManager();
+    const room = battleRoom(rooms);
+    rooms.endRoom(room.roomId);
+    expect(room.status).toBe('ended');
+    rooms.remove(room.roomId);
+    expect(rooms.get(room.roomId)).toBeNull();
+  });
+});

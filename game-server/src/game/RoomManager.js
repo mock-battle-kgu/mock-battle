@@ -105,6 +105,17 @@ class RoomManager {
     return { room, deleted: false };
   }
 
+  // 게임 종료: 상태만 ended로 바꾼다 (참가자 목록은 결과 화면을 위해 유지)
+  endRoom(roomId) {
+    const room = this.rooms.get(roomId);
+    if (room) room.status = 'ended';
+    return room ?? null;
+  }
+
+  remove(roomId) {
+    return this.rooms.delete(roomId);
+  }
+
   findBySocket(socketId) {
     for (const room of this.rooms.values()) {
       if (room.players.some((p) => p.socketId === socketId && p.connected)) return room;
