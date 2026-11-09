@@ -84,7 +84,10 @@
 // 응답
 { "ok": true, "price": 60400, "qty": 50, "cash": 6980000 }
 ```
-실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `GAME_NOT_PLAYING`
+실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `INVALID_STOCK`, `INVALID_SIDE`, `GAME_NOT_PLAYING`
+- 체결가는 **서버가 가진 최신 시세**입니다. 화면이 보낸 가격은 받지 않습니다.
+- 방과 참가자는 소켓 연결로 판단합니다. 요청의 `roomId`는 생략해도 되고, 다른 사람의 `playerId`를 넣어도 무시됩니다.
+- 응답의 `cash`는 체결 후 내 현금입니다. 보유 주식과 수익률은 `portfolio:update`로 받습니다.
 
 #### `rumor:use` 루머 카드 사용 (대결 모드만)
 ```json
@@ -278,10 +281,12 @@ Docker 헬스체크와 GitHub Actions 통합 테스트에서 사용합니다.
 | `NICKNAME_TAKEN` | 같은 방에 같은 닉네임 존재 |
 | `NOT_HOST` | 방장이 아님 |
 | `NOT_ENOUGH_PLAYERS` | 대결 모드 인원 부족 (2명 미만) |
-| `GAME_NOT_PLAYING` | 게임 중이 아님 |
+| `GAME_NOT_PLAYING` | 게임 중이 아님 (시작 전·종료 후·시작가 도착 전·참가자가 아님) |
 | `NOT_ENOUGH_CASH` | 현금 부족 |
 | `NOT_ENOUGH_SHARES` | 보유 수량 부족 |
 | `INVALID_QTY` | 수량이 1 미만이거나 정수가 아님 |
+| `INVALID_STOCK` | 이 게임에 없는 종목 코드 |
+| `INVALID_SIDE` | side가 buy·sell이 아님 |
 | `NO_RUMOR_CARD` | 루머 카드 소진 |
 | `INVALID_NICKNAME` | 닉네임이 비었거나 10자 초과 |
 | `INVALID_MODE` | mode가 battle·practice가 아님 |
