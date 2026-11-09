@@ -2,17 +2,36 @@ const config = require('./config');
 const logger = require('./logger');
 const { createApp } = require('./app');
 const { MarketClient } = require('./mq/marketClient');
-const { connectMarketToSockets } = require('./socket/marketBridge');
+const { RoomManager } = require('./game/RoomManager');
+const { GameService } = require('./game/GameService');
+const { registerRoomHandlers, broadcastRoom } = require('./socket/roomHandlers');
 
 async function main() {
   const { server, io } = createApp({ logger });
 
   const market = new MarketClient({ url: config.rabbitmqUrl, logger });
   await market.connect();
-  connectMarketToSockets({ market, io, logger });
+
+  const rooms = new RoomManager();
+  const games = new GameService({
+    io,
+    market,
+    rooms,
+    logger,
+    durationSec: config.gameDurationSec,
+    startCash: config.startCash,
+    rumorCards: config.rumorCards,
+    scenarioIds: config.scenarioIds,
+    backupGraceSec: config.backupGraceSec,
+    endedRoomTtlMs: config.endedRoomTtlMs,
+    broadcastRoom: (room) => broadcastRoom(io, room),
+  });
+
+  market.onTick((tick) => games.handleTick(tick));
+  registerRoomHandlers({ io, rooms, logger, onGameStart: (room) => games.startGame(room) });
 
   server.listen(config.port, () => {
-    logger.info({ port: config.port }, 'game-server started');
+    logger.info({ port: config.port, gameDurationSec: config.gameDurationSec }, 'game-server started');
   });
 
   // docker compose down 때 깔끔하게 종료
