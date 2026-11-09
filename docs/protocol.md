@@ -200,7 +200,8 @@
 ```
 - `ranks`: 마지막 시세 기준 최종 순위 (`totalAsset` 포함)
 - `rumors`: 어떤 뉴스가 루머였고 누가 퍼뜨렸는지 공개
-- `reveal`: 연습 모드에서만 사용 → `{ "name": "실제 종목명", "period": "2020-01 ~ 2020-12" }`
+- `reveal`: 연습 모드에서만 사용, 대결 모드는 `null`
+  → `{ "scenarioId": "covid-2020", "name": "삼성전자", "code": "005930", "period": "2020-01 ~ 2020-06" }` (scenarios/index.json 기준)
 
 ## 3. 게임 서버 ↔ 시세 엔진 (RabbitMQ)
 
