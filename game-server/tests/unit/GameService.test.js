@@ -129,3 +129,34 @@ describe('게임 종료', () => {
     expect(games.get(room.roomId)).toBeNull();
   });
 });
+
+describe('캔들', () => {
+  const tick = (games, room, t, price) => games.handleTick({ roomId: room.roomId, t, prices: { GANA: price } });
+
+  test('5초마다 candle:close를 보낸다', () => {
+    const { games, room, events } = setup({ durationSec: 20 });
+    games.startGame(room);
+    [0, 1, 2, 3, 4].forEach((t) => tick(games, room, t, 100 + t));
+    expect(events('candle:close')).toHaveLength(0);
+    tick(games, room, 5, 90);
+    expect(events('candle:close')[0]).toEqual({
+      room: room.roomId, event: 'candle:close', data: { t: 5, candles: { GANA: { o: 101, h: 104, l: 90, c: 90 } } },
+    });
+    [6, 7, 8, 9, 10].forEach((t) => tick(games, room, t, 100));
+    expect(events('candle:close')).toHaveLength(2);
+    expect(games.get(room.roomId).candles).toHaveLength(2);
+  });
+
+  test('5의 배수가 아닌 시점에 끝나면 남은 캔들을 game:end 전에 보낸다', () => {
+    const { games, room, sent, events } = setup({ durationSec: 7 });
+    games.startGame(room);
+    for (let t = 0; t <= 7; t += 1) tick(games, room, t, 100 + t);
+    const closes = events('candle:close').map((e) => e.data);
+    expect(closes).toEqual([
+      { t: 5, candles: { GANA: { o: 101, h: 105, l: 101, c: 105 } } },
+      { t: 7, candles: { GANA: { o: 106, h: 107, l: 106, c: 107 } } },
+    ]);
+    const order = sent.map((s) => s.event);
+    expect(order.lastIndexOf('candle:close')).toBeLessThan(order.indexOf('game:end'));
+  });
+});

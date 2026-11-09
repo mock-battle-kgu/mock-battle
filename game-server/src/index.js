@@ -21,6 +21,7 @@ async function main() {
     durationSec: config.gameDurationSec,
     startCash: config.startCash,
     rumorCards: config.rumorCards,
+    candleTicks: config.candleTicks,
     scenarioIds: config.scenarioIds,
     backupGraceSec: config.backupGraceSec,
     endedRoomTtlMs: config.endedRoomTtlMs,

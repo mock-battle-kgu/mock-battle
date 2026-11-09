@@ -1,6 +1,7 @@
 // 한 판의 진행: 시작 신호 → 시세 전달 → 시간 종료 → 정리 (docs/game-design.md 6-2)
 // 시계는 시세 엔진의 t를 따르고, 시세가 끊겨도 끝나도록 백업 타이머를 둔다.
 const { BATTLE_STOCKS, PRACTICE_STOCKS } = require('./stocks');
+const { CandleBuilder } = require('./CandleBuilder');
 
 class GameService {
   constructor({
@@ -15,11 +16,12 @@ class GameService {
     backupGraceSec,
     endedRoomTtlMs,
     broadcastRoom,
+    candleTicks = 5,
     random = Math.random,
   }) {
     Object.assign(this, {
       io, market, rooms, logger, durationSec, startCash, rumorCards,
-      scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, random,
+      scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, candleTicks, random,
     });
     this.games = new Map(); // roomId → 진행 중인 게임
   }
@@ -34,6 +36,8 @@ class GameService {
       prices: {},
       ended: false,
       scenarioId: isBattle ? null : this.pickScenario(),
+      candleBuilder: new CandleBuilder(this.candleTicks),
+      candles: [], // 완성된 캔들 기록 (결과 화면·복기용)
       backupTimer: null,
     };
     this.games.set(room.roomId, game);
@@ -71,7 +75,14 @@ class GameService {
     game.t = t;
     game.prices = { ...game.prices, ...prices };
     this.io.to(roomId).emit('price:tick', { t, prices });
+    this.emitCandle(game, game.candleBuilder.add(t, prices));
     if (t >= this.durationSec) this.endGame(roomId, 'time');
+  }
+
+  emitCandle(game, closed) {
+    if (!closed) return;
+    game.candles.push(closed);
+    this.io.to(game.roomId).emit('candle:close', closed);
   }
 
   endGame(roomId, reason) {
@@ -79,6 +90,8 @@ class GameService {
     if (!game || game.ended) return; // 두 번 끝나지 않게
     game.ended = true;
     clearTimeout(game.backupTimer);
+    // 5초를 다 못 채운 마지막 캔들도 닫아서 보낸다
+    this.emitCandle(game, game.candleBuilder.flush(game.t));
 
     const room = this.rooms.endRoom(roomId);
     if (room) this.broadcastRoom(room);
