@@ -295,3 +295,23 @@ describe('계좌·순위 알림', () => {
     });
   });
 });
+
+describe('연습 모드 정체 공개', () => {
+  test('연습 모드가 끝나면 고른 시나리오의 실제 종목을 공개한다', () => {
+    const { games, room, events } = setup({ mode: 'practice', durationSec: 1, random: () => 0.9 });
+    games.revealScenario = (id) => ({ scenarioId: id, name: 'SK하이닉스', code: '000660', period: '2024-01 ~ 2024-06' });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 1, prices: { STOCK_A: 10_000 } });
+    expect(events('game:end')[0].data.reveal).toEqual({
+      scenarioId: 'chip-2024', name: 'SK하이닉스', code: '000660', period: '2024-01 ~ 2024-06',
+    });
+  });
+
+  test('대결 모드는 reveal이 null', () => {
+    const { games, room, events } = setup({ durationSec: 1 });
+    games.revealScenario = () => ({ name: 'x' });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 1, prices: { GANA: 10_000 } });
+    expect(events('game:end')[0].data.reveal).toBeNull();
+  });
+});

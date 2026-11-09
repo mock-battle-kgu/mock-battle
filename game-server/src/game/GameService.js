@@ -20,11 +20,12 @@ class GameService {
     endedRoomTtlMs,
     broadcastRoom,
     candleTicks = 5,
+    revealScenario = () => null,
     random = Math.random,
   }) {
     Object.assign(this, {
       io, market, rooms, logger, durationSec, startCash, rumorCards,
-      scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, candleTicks, random,
+      scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, candleTicks, revealScenario, random,
     });
     this.games = new Map(); // roomId → 진행 중인 게임
   }
@@ -148,8 +149,9 @@ class GameService {
     const room = this.rooms.endRoom(roomId);
     if (room) this.broadcastRoom(room);
 
-    // 루머 공개(K단계)·연습 모드 종목 공개(H단계)는 이후 채운다
-    this.io.to(roomId).emit('game:end', { ranks: game.finalRanks, rumors: [], reveal: null });
+    // 연습 모드는 끝나면 실제 종목·기간 공개. 루머 공개는 K단계에서 채운다
+    const reveal = game.mode === 'practice' ? this.revealScenario(game.scenarioId) : null;
+    this.io.to(roomId).emit('game:end', { ranks: game.finalRanks, rumors: [], reveal });
     this.market.publishControl({ type: 'stop', roomId });
     this.logger?.info({ roomId, reason, t: game.t }, 'game ended');
 

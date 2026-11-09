@@ -18,11 +18,13 @@ services:
       API_URL: http://api-server:3000
       GAME_DURATION_SEC: 600
       LOG_DIR: /app/logs
+      SCENARIO_DIR: /app/scenarios
     networks:
       - frontend
       - backend
     volumes:
       - game-logs:/app/logs
+      - ./scenarios:/app/scenarios:ro
     depends_on:
       rabbitmq:
         condition: service_healthy

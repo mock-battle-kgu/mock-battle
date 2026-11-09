@@ -45,6 +45,7 @@ async function main() {
   });
   host.on('game:end', (end) => {
     console.log('  내 계좌(마지막) →', JSON.stringify(lastPortfolio));
+    if (end.reveal) console.log('game:end 정체 공개 →', JSON.stringify(end.reveal));
     console.log('game:end 최종 순위 →', end.ranks.map((x) => `${x.rank}위 ${x.nickname} ${x.returnPct}% (${x.totalAsset}원)`).join(' / '));
     setTimeout(() => process.exit(0), 500);
   });
