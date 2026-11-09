@@ -219,3 +219,79 @@ describe('주문', () => {
     expect(codeOf(() => order(games, room, 'p1', 'GANA', 'buy', 1))).toBe('INVALID_STOCK');
   });
 });
+
+describe('계좌·순위 알림', () => {
+  const tick = (games, room, t, price) => games.handleTick({ roomId: room.roomId, t, prices: { GANA: price } });
+
+  test('1초마다 각자에게 portfolio:update, 방 전체에 rank:update', () => {
+    const { games, room, events } = setup();
+    games.startGame(room);
+    tick(games, room, 0, 10_000);
+    const portfolios = events('portfolio:update');
+    expect(portfolios.map((e) => e.room).sort()).toEqual(['s1', 's2']); // 소켓별로 따로
+    expect(portfolios[0].data).toEqual({ cash: 10_000_000, holdings: {}, totalAsset: 10_000_000, returnPct: 0 });
+    expect(events('rank:update')[0]).toEqual({
+      room: room.roomId, event: 'rank:update',
+      data: { t: 0, ranks: [
+        { rank: 1, playerId: 'p1', nickname: '방장', returnPct: 0 },
+        { rank: 2, playerId: 'p2', nickname: '손님', returnPct: 0 },
+      ] },
+    });
+  });
+
+  test('체결되면 그 사람에게만 바로 portfolio:update', () => {
+    const { games, room, sent } = setup();
+    games.startGame(room);
+    tick(games, room, 0, 10_000);
+    sent.length = 0;
+    games.placeOrder({ roomId: room.roomId, playerId: 'p2', stock: 'GANA', side: 'buy', qty: 100 });
+    expect(sent).toEqual([{
+      room: 's2', event: 'portfolio:update',
+      data: { cash: 9_000_000, holdings: { GANA: { qty: 100, avgPrice: 10_000 } }, totalAsset: 10_000_000, returnPct: 0 },
+    }]);
+  });
+
+  test('주가가 오르면 산 사람이 1위로 올라간다', () => {
+    const { games, room, events } = setup();
+    games.startGame(room);
+    tick(games, room, 0, 10_000);
+    games.placeOrder({ roomId: room.roomId, playerId: 'p2', stock: 'GANA', side: 'buy', qty: 100 });
+    tick(games, room, 1, 12_000);
+    const { ranks } = events('rank:update').at(-1).data;
+    expect(ranks.map((r) => [r.playerId, r.returnPct])).toEqual([['p2', 2], ['p1', 0]]);
+  });
+
+  test('연결이 끊긴 사람에게는 portfolio:update를 보내지 않지만 순위에는 남는다', () => {
+    const { games, room, rooms, events } = setup();
+    games.startGame(room);
+    rooms.leave('s2');
+    tick(games, room, 0, 10_000);
+    expect(events('portfolio:update').map((e) => e.room)).toEqual(['s1']);
+    expect(events('rank:update')[0].data.ranks).toHaveLength(2);
+  });
+
+  test('연습 모드는 rank:update를 보내지 않는다', () => {
+    const { games, room, events } = setup({ mode: 'practice' });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { STOCK_A: 10_000 } });
+    expect(events('rank:update')).toHaveLength(0);
+    expect(events('portfolio:update')).toHaveLength(1);
+  });
+
+  test('game:end에 최종 순위와 총자산이 담긴다', () => {
+    const { games, room, events } = setup({ durationSec: 2 });
+    games.startGame(room);
+    tick(games, room, 0, 10_000);
+    games.placeOrder({ roomId: room.roomId, playerId: 'p2', stock: 'GANA', side: 'buy', qty: 100 });
+    tick(games, room, 1, 10_000);
+    tick(games, room, 2, 15_000);
+    expect(events('game:end')[0].data).toEqual({
+      ranks: [
+        { rank: 1, playerId: 'p2', nickname: '손님', returnPct: 5, totalAsset: 10_500_000 },
+        { rank: 2, playerId: 'p1', nickname: '방장', returnPct: 0, totalAsset: 10_000_000 },
+      ],
+      rumors: [],
+      reveal: null,
+    });
+  });
+});

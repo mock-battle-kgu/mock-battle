@@ -4,6 +4,7 @@ const { BATTLE_STOCKS, PRACTICE_STOCKS } = require('./stocks');
 const { CandleBuilder } = require('./CandleBuilder');
 const { Portfolio } = require('./Portfolio');
 const { GameError } = require('./errors');
+const { rankPlayers } = require('./Ranking');
 
 class GameService {
   constructor({
@@ -82,7 +83,29 @@ class GameService {
     game.prices = { ...game.prices, ...prices };
     this.io.to(roomId).emit('price:tick', { t, prices });
     this.emitCandle(game, game.candleBuilder.add(t, prices));
+    this.emitStandings(game);
     if (t >= this.durationSec) this.endGame(roomId, 'time');
+  }
+
+  players(game) {
+    return this.rooms.get(game.roomId)?.players ?? [];
+  }
+
+  // 참가자 한 명에게 내 계좌 상태 (protocol.md portfolio:update)
+  emitPortfolio(game, player) {
+    if (!player.connected) return;
+    const portfolio = game.portfolios.get(player.playerId);
+    if (portfolio) this.io.to(player.socketId).emit('portfolio:update', portfolio.snapshot(game.prices));
+  }
+
+  // 1초마다: 각자에게 portfolio:update, 대결 모드는 방 전체에 rank:update
+  emitStandings(game) {
+    const players = this.players(game);
+    for (const player of players) this.emitPortfolio(game, player);
+    if (game.mode !== 'battle') return;
+    const ranks = rankPlayers(players, game.portfolios, game.prices)
+      .map(({ rank, playerId, nickname, returnPct }) => ({ rank, playerId, nickname, returnPct }));
+    this.io.to(game.roomId).emit('rank:update', { t: game.t, ranks });
   }
 
   // order:place 처리: 서버가 가진 최신 시세로 즉시 체결 (화면이 보낸 가격은 받지 않음)
@@ -98,6 +121,9 @@ class GameService {
 
     const result = side === 'buy' ? portfolio.buy(stock, qty, price) : portfolio.sell(stock, qty, price);
     game.orders.push({ t: game.t, playerId, stock, side, qty, price });
+    // 체결되면 1초를 기다리지 않고 바로 내 계좌 상태를 보낸다
+    const player = this.players(game).find((p) => p.playerId === playerId);
+    if (player) this.emitPortfolio(game, player);
     this.logger?.debug({ roomId, playerId, stock, side, qty, price }, 'order filled');
     return result;
   }
@@ -116,11 +142,14 @@ class GameService {
     // 5초를 다 못 채운 마지막 캔들도 닫아서 보낸다
     this.emitCandle(game, game.candleBuilder.flush(game.t));
 
+    // 마지막 시세로 최종 순위 (J단계에서 API 서버에 저장)
+    game.finalRanks = rankPlayers(this.players(game), game.portfolios, game.prices);
+
     const room = this.rooms.endRoom(roomId);
     if (room) this.broadcastRoom(room);
 
-    // 순위·루머 공개·연습 모드 종목 공개는 G·J·H단계에서 채운다
-    this.io.to(roomId).emit('game:end', { ranks: [], rumors: [], reveal: null });
+    // 루머 공개(K단계)·연습 모드 종목 공개(H단계)는 이후 채운다
+    this.io.to(roomId).emit('game:end', { ranks: game.finalRanks, rumors: [], reveal: null });
     this.market.publishControl({ type: 'stop', roomId });
     this.logger?.info({ roomId, reason, t: game.t }, 'game ended');
 
