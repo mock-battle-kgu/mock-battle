@@ -42,6 +42,19 @@ async function main() {
     setTimeout(() => process.exit(0), 500);
   });
 
+  // 시세가 들어오기 시작하면 주문을 몇 번 넣어 본다
+  const stock = mode === 'battle' ? 'GANA' : 'STOCK_A';
+  const orders = {
+    2: { stock, side: 'buy', qty: 100 },
+    4: { stock, side: 'sell', qty: 40 },
+    6: { stock, side: 'buy', qty: 100000 }, // 현금 부족
+    8: { stock, side: 'sell', qty: 1000 },  // 보유 부족
+  };
+  host.on('price:tick', async (tick) => {
+    const order = orders[tick.t];
+    if (order) console.log(`  order:place ${order.side} ${order.qty}주 →`, await request(host, 'order:place', order));
+  });
+
   console.log('room:start →', await request(host, 'room:start', { roomId: created.roomId }));
   console.log(`\nPIN ${created.roomId} — game:end가 올 때까지 기다립니다 (Ctrl + C로 종료)\n`);
 }

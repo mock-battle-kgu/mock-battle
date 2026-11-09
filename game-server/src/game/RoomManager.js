@@ -3,12 +3,8 @@ const MAX_PLAYERS = 8;
 const MIN_BATTLE_PLAYERS = 2;
 const MODES = ['battle', 'practice'];
 
-class RoomError extends Error {
-  constructor(code, message) {
-    super(message);
-    this.code = code;
-  }
-}
+// 방 관련 오류도 공통 GameError를 사용 (RoomError는 기존 이름 유지용)
+const { GameError: RoomError } = require('./errors');
 
 class RoomManager {
   constructor({ random = Math.random } = {}) {

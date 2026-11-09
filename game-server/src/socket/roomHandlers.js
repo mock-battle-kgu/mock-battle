@@ -1,6 +1,7 @@
 // room:create / room:join / room:start 요청을 받아 RoomManager로 처리하고,
 // 결과를 응답(ack)과 room:update 알림으로 돌려준다 (docs/protocol.md 2장)
-const { RoomManager, RoomError } = require('../game/RoomManager');
+const { RoomManager } = require('../game/RoomManager');
+const { respond: baseRespond } = require('./respond');
 
 function broadcastRoom(io, room) {
   io.to(room.roomId).emit('room:update', RoomManager.publicState(room));
@@ -9,20 +10,7 @@ function broadcastRoom(io, room) {
 function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
   const broadcast = (room) => broadcastRoom(io, room);
 
-  // 응답 형식 통일: 성공 { ok: true, ... } / 실패 { ok: false, code, message }
-  const respond = (ack, work) => {
-    if (typeof ack !== 'function') return;
-    try {
-      ack({ ok: true, ...work() });
-    } catch (err) {
-      if (err instanceof RoomError) {
-        ack({ ok: false, code: err.code, message: err.message });
-      } else {
-        logger?.error({ err: err.message }, 'room handler failed');
-        ack({ ok: false, code: 'INTERNAL_ERROR', message: 'server error' });
-      }
-    }
-  };
+  const respond = (ack, work) => baseRespond(ack, work, logger);
 
   // 이미 다른 방에 있던 소켓이면 먼저 나가게 한다
   const leaveCurrentRoom = (socket) => {
