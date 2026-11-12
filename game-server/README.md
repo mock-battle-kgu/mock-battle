@@ -17,6 +17,12 @@ npm start                    # http://localhost:4000/health
 npm run fake-market          # 방 000000으로 1초마다 시세 전송
 ```
 
+방 만들기·입장·시작 확인 (화면 없이, 다른 창에서):
+```bash
+npm run try-room             # 봇 2명이 방 생성 → 입장 → 시작, PIN 출력
+npm run fake-market -- PIN   # 그 PIN으로 가짜 시세를 보내면 price:tick 확인
+```
+
 RabbitMQ 관리 화면: http://localhost:15672 (guest / guest)
 
 ## 테스트
