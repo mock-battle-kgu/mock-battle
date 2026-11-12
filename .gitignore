@@ -20,5 +20,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Docker 볼륨 데이터
-data/
+# Docker 볼륨 데이터 (저장소 최상위 data/ 만)
+/data/
+
+# 로그, 테스트 결과
+logs/
+coverage/
