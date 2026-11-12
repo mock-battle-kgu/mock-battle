@@ -1,0 +1,8 @@
+{
+  "GANA": { "name": "가나전자", "startPrice": 46000, "sigma": 0.003 },
+  "DARA": { "name": "다라항공", "startPrice": 19000, "sigma": 0.004 },
+  "MABA": { "name": "마바게임즈", "startPrice": 32000, "sigma": 0.006 },
+  "SAAH": { "name": "사아바이오", "startPrice": 54000, "sigma": 0.006 },
+  "JACHA": { "name": "자차푸드", "startPrice": 27000, "sigma": 0.002 },
+  "KATA": { "name": "카타에너지", "startPrice": 15000, "sigma": 0.004 }
+}
