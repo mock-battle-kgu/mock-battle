@@ -1,6 +1,7 @@
-// 방 하나의 시장: 1초마다 가격을 만들고, 시간이 다 되면 스스로 멈춤
+// 방 하나의 시장: 1초마다 가격을 만들고(대결) 또는 재생하고(연습), 시간이 다 되면 스스로 멈춤
 const PriceModel = require("./model/PriceModel");
 const { randomSeed } = require("./model/random");
+const { Replay, PRACTICE_CODE } = require("./model/Replay");
 
 class MarketRoom {
   /**
@@ -19,15 +20,25 @@ class MarketRoom {
     this.onTick = onTick;
     this.onEnd = onEnd;
 
-    // 대결 모드만 가격 모델 사용 (연습 모드 재생은 E단계)
-    this.model =
-      this.mode === "battle"
-        ? new PriceModel({ codes: this.stocks, seed: this.seed })
-        : null;
-    this.prices = this.model ? this.model.snapshot() : {};
-
     this.t = 0;
     this.timer = null;
+
+    // 대결 모드는 가격 모델, 연습 모드는 과거 주가 재생
+    // 시나리오 파일이 없으면 여기서 오류가 나고, RoomManager가 방을 만들지 않음
+    this.model = null;
+    this.replay = null;
+    if (this.mode === "battle") {
+      this.model = new PriceModel({ codes: this.stocks, seed: this.seed });
+    } else if (this.mode === "practice") {
+      this.replay = Replay.load(this.scenarioId);
+    }
+    this.prices = this.currentPrices();
+  }
+
+  currentPrices() {
+    if (this.model) return this.model.snapshot();
+    if (this.replay) return { [PRACTICE_CODE]: this.replay.priceAt(this.t) };
+    return {};
   }
 
   get running() {
@@ -44,7 +55,7 @@ class MarketRoom {
 
   tick() {
     this.t += 1;
-    if (this.model) this.prices = this.model.step();
+    this.prices = this.model ? this.model.step() : this.currentPrices();
     this.onTick(this);
     if (this.t >= this.durationSec) {
       this.stop();

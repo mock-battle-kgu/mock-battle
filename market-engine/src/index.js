@@ -44,8 +44,8 @@ async function main() {
     logger,
     onTick: (room) => {
       const codes = Object.keys(room.prices);
-      if (codes.length === 0) return; // 연습 모드 재생은 E단계에서 추가
-      // impactPct(플레이어 영향)는 G단계 전까지 0으로 보냄
+      if (codes.length === 0) return;
+      // impactPct(플레이어 영향)는 G단계 전까지 0으로 보냄 (연습 모드는 항상 0)
       const impactPct = Object.fromEntries(codes.map((code) => [code, 0]));
       publish("market.tick", { roomId: room.roomId, t: room.t, prices: room.prices, impactPct });
       logger.debug({ roomId: room.roomId, t: room.t, prices: room.prices }, "tick 발행");
