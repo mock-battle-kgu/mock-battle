@@ -2,12 +2,20 @@ const MarketRoom = require("../src/MarketRoom");
 
 function createRoom(overrides = {}) {
   const ticks = [];
+  const prices = [];
   const onEnd = jest.fn();
   const room = new MarketRoom(
     { roomId: "482913", mode: "battle", durationSec: 5, stocks: ["GANA"], ...overrides },
-    { tickMs: 1000, onTick: (r) => ticks.push(r.t), onEnd }
+    {
+      tickMs: 1000,
+      onTick: (r) => {
+        ticks.push(r.t);
+        prices.push({ ...r.prices });
+      },
+      onEnd,
+    }
   );
-  return { room, ticks, onEnd };
+  return { room, ticks, prices, onEnd };
 }
 
 describe("MarketRoom", () => {
@@ -45,5 +53,31 @@ describe("MarketRoom", () => {
     jest.advanceTimersByTime(5000);
     expect(ticks).toEqual([0, 1, 2]);
     expect(room.running).toBe(false);
+  });
+
+  test("대결 모드: t=0 틱에 시작가가 들어 있음", () => {
+    const { room, prices } = createRoom({ stocks: ["GANA", "DARA"] });
+    room.start();
+    expect(prices[0]).toEqual({ GANA: 46000, DARA: 19000 });
+  });
+
+  test("대결 모드: 틱마다 가격이 바뀜", () => {
+    const { room, prices } = createRoom({ stocks: ["MABA"], durationSec: 600, seed: 3 });
+    room.start();
+    jest.advanceTimersByTime(30000);
+    const values = new Set(prices.map((p) => p.MABA));
+    expect(values.size > 1).toBe(true);
+  });
+
+  test("방 2개가 같은 시드면 같은 가격, 서로 영향 없음", () => {
+    const a = createRoom({ roomId: "111111", stocks: ["GANA"], durationSec: 600, seed: 9 });
+    const b = createRoom({ roomId: "222222", stocks: ["GANA"], durationSec: 600, seed: 9 });
+    a.room.start();
+    b.room.start();
+    jest.advanceTimersByTime(5000);
+    b.room.stop();
+    jest.advanceTimersByTime(5000);
+    expect(b.prices).toEqual(a.prices.slice(0, b.prices.length));
+    expect(a.prices.length).toBe(11);
   });
 });
