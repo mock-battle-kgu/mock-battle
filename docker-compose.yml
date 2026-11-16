@@ -1,7 +1,7 @@
 
 services:
   nginx:
-    image: nginx:1.27-alpine
+    build: ./frontend
     ports:
       - "80:80"
     networks:
@@ -11,7 +11,8 @@ services:
     restart: unless-stopped
 
   game-server:
-    build: ./game-server
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
     environment:
       PORT: 4000
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
@@ -31,7 +32,8 @@ services:
     restart: unless-stopped
 
   api-server:
-    build: ./api-server
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
     environment:
       PORT: 3000
       DB_HOST: db
@@ -48,7 +50,8 @@ services:
     restart: unless-stopped
 
   market-engine:
-    build: ./market-engine
+    image: alpine:3.20
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
     environment:
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
       SCENARIO_DIR: /app/scenarios
