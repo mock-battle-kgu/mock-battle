@@ -19,7 +19,7 @@ function App() {
   return (
     <BrowserRouter>
       <div>
-        <div className="connection-status">
+        <div className={`connection-status ${connectionStatus}`}>
           {statusText[connectionStatus]}
         </div>
 

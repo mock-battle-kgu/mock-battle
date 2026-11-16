@@ -1,7 +1,7 @@
 
 services:
   nginx:
-    image: nginx:1.27-alpine
+    build: ./frontend
     ports:
       - "80:80"
     networks:
