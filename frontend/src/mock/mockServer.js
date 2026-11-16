@@ -18,7 +18,9 @@ export const startMockServer = (emit) => {
   let prices = Object.fromEntries(
     Object.entries(STOCKS).map(([code, stock]) => [code, stock.price]),
   )
-
+  const candleTicks = Object.fromEntries(
+    Object.keys(prices).map((stock) => [stock, []]),
+  )
   const startCash = 10000000
   const cash = startCash
   const holdings = {}
@@ -52,11 +54,12 @@ export const startMockServer = (emit) => {
   const priceTimer = setInterval(() => {
     t += 1
 
-    const previousPrices = { ...prices }
-
     Object.keys(prices).forEach((stock) => {
       const change = Math.round((Math.random() - 0.5) * 1000)
       prices[stock] = Math.max(1000, prices[stock] + change)
+
+      // 변경된 가격을 캔들 데이터에 저장
+      candleTicks[stock].push(prices[stock])
     })
 
     emit('price:tick', { t, prices })
@@ -110,20 +113,23 @@ export const startMockServer = (emit) => {
       emit('candle:close', {
         t,
         candles: Object.fromEntries(
-          Object.entries(prices).map(([stock, price]) => {
-            const previous = previousPrices[stock]
-
+          Object.entries(candleTicks).map(([stock, ticks]) => {
             return [
               stock,
               {
-                o: previous,
-                h: Math.max(previous, price) + 200,
-                l: Math.min(previous, price) - 200,
-                c: price,
+                o: ticks[0],
+                h: Math.max(...ticks),
+                l: Math.min(...ticks),
+                c: ticks[ticks.length - 1],
               },
             ]
           }),
         ),
+      })
+
+      // 캔들 생성 후 다음 5틱을 수집하도록 초기화
+      Object.keys(candleTicks).forEach((stock) => {
+        candleTicks[stock] = []
       })
     }
 
