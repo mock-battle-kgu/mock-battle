@@ -1,29 +1,76 @@
-
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Home.css'
 
-function Home() {
+function Home({ createRoom, joinRoom }) {
+  const navigate = useNavigate()
+
   const [nickname, setNickname] = useState('')
   const [roomId, setRoomId] = useState('')
+  const [pending, setPending] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
+  const trimmedNickname = nickname.trim()
   const isNicknameValid =
-    nickname.trim().length >= 1 && nickname.trim().length <= 10
-
+    trimmedNickname.length >= 1 && trimmedNickname.length <= 10
   const isRoomIdValid = /^\d{6}$/.test(roomId)
 
+  const getErrorMessage = (response) => {
+    const messages = {
+      ROOM_NOT_FOUND: '존재하지 않는 방입니다.',
+      ROOM_FULL: '방 정원이 가득 찼습니다.',
+      GAME_STARTED: '이미 게임이 시작된 방입니다.',
+      NICKNAME_TAKEN: '이미 사용 중인 닉네임입니다.',
+      SERVER_DISCONNECTED: '서버 연결을 확인해 주세요.',
+      REQUEST_TIMEOUT: '서버 응답 시간이 초과되었습니다.',
+    }
+
+    return messages[response?.code] || response?.message || '요청에 실패했습니다.'
+  }
+
+  const handleRequest = async (request, destination) => {
+    if (!isNicknameValid || pending) return
+
+    setPending(true)
+    setErrorMessage('')
+
+    try {
+      const response = await request()
+
+      if (!response?.ok) {
+        setErrorMessage(getErrorMessage(response))
+        return
+      }
+
+      navigate(destination)
+    } catch {
+      setErrorMessage('요청 중 오류가 발생했습니다.')
+    } finally {
+      setPending(false)
+    }
+  }
+
   const handleCreateRoom = () => {
-    if (!isNicknameValid) return
-    alert('방 만들기는 서버 연결 후 구현할 예정입니다.')
+    handleRequest(
+      () => createRoom({ nickname: trimmedNickname, mode: 'battle' }),
+      '/waiting',
+    )
   }
 
   const handleJoinRoom = () => {
-    if (!isNicknameValid || !isRoomIdValid) return
-    alert('방 입장은 서버 연결 후 구현할 예정입니다.')
+    if (!isRoomIdValid) return
+
+    handleRequest(
+      () => joinRoom({ nickname: trimmedNickname, roomId }),
+      '/waiting',
+    )
   }
 
   const handlePractice = () => {
-    if (!isNicknameValid) return
-    alert('연습 모드는 서버 연결 후 구현할 예정입니다.')
+    handleRequest(
+      () => createRoom({ nickname: trimmedNickname, mode: 'practice' }),
+      '/game',
+    )
   }
 
   return (
@@ -45,17 +92,18 @@ function Home() {
             placeholder="닉네임을 입력하세요 (1~10자)"
             value={nickname}
             maxLength={10}
-            onChange={(e) => setNickname(e.target.value)}
+            onChange={(event) => setNickname(event.target.value)}
+            disabled={pending}
           />
 
           <div className="home-actions">
             <button
               type="button"
               className="primary-button"
-              disabled={!isNicknameValid}
+              disabled={!isNicknameValid || pending}
               onClick={handleCreateRoom}
             >
-              방 만들기
+              {pending ? '처리 중...' : '방 만들기'}
             </button>
 
             <div className="join-section">
@@ -68,13 +116,14 @@ function Home() {
                   placeholder="6자리 PIN"
                   value={roomId}
                   maxLength={6}
-                  onChange={(e) =>
-                    setRoomId(e.target.value.replace(/\D/g, ''))
+                  disabled={pending}
+                  onChange={(event) =>
+                    setRoomId(event.target.value.replace(/\D/g, ''))
                   }
                 />
                 <button
                   type="button"
-                  disabled={!isNicknameValid || !isRoomIdValid}
+                  disabled={!isNicknameValid || !isRoomIdValid || pending}
                   onClick={handleJoinRoom}
                 >
                   입장
@@ -85,12 +134,18 @@ function Home() {
             <button
               type="button"
               className="practice-button"
-              disabled={!isNicknameValid}
+              disabled={!isNicknameValid || pending}
               onClick={handlePractice}
             >
               혼자 연습하기
             </button>
           </div>
+
+          {errorMessage && (
+            <p className="home-error" role="alert">
+              {errorMessage}
+            </p>
+          )}
         </section>
       </section>
     </main>
