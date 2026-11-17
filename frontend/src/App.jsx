@@ -8,9 +8,10 @@ import { useGame } from './socket/useGame'
 import './App.css'
 
 function App() {
-  const { connectionStatus, createRoom, joinRoom } = useGame()
+const { connectionStatus, createRoom, joinRoom } = useGame()
 
-  const statusText = {
+const statusText = {
+  mock: 'Mock 서버 연결',
     connected: '서버 연결됨',
     disconnected: '서버 연결 끊김',
   }
@@ -23,15 +24,15 @@ function App() {
         </div>
 
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Home
-                createRoom={createRoom}
-                joinRoom={joinRoom}
-              />
-            }
-          />
+<Route
+  path="/"
+  element={
+    <Home
+      createRoom={createRoom}
+      joinRoom={joinRoom}
+    />
+  }
+/>
           <Route path="/waiting" element={<WaitingRoom />} />
           <Route path="/game" element={<Game />} />
           <Route path="/result" element={<Result />} />
