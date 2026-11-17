@@ -1,0 +1,36 @@
+{
+  "scenarios": [
+    {
+      "id": "covid-2020",
+      "file": "covid-2020.csv",
+      "name": "삼성전자",
+      "code": "005930",
+      "period": "2020-01 ~ 2020-06",
+      "days": 120
+    },
+    {
+      "id": "chip-2024",
+      "file": "chip-2024.csv",
+      "name": "SK하이닉스",
+      "code": "000660",
+      "period": "2024-01 ~ 2024-06",
+      "days": 120
+    },
+    {
+      "id": "platform-2021",
+      "file": "platform-2021.csv",
+      "name": "카카오",
+      "code": "035720",
+      "period": "2021-06 ~ 2021-11",
+      "days": 120
+    },
+    {
+      "id": "battery-2023",
+      "file": "battery-2023.csv",
+      "name": "에코프로",
+      "code": "086520",
+      "period": "2023-01 ~ 2023-06",
+      "days": 120
+    }
+  ]
+}
