@@ -1,0 +1,119 @@
+
+.home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f5f6fa;
+}
+
+.home-container {
+  width: 100%;
+  max-width: 480px;
+  padding: 40px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+.home-header {
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.home-label {
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.home-header h1 {
+  margin-bottom: 12px;
+  font-size: 30px;
+}
+
+.home-description {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.home-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.home-form input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+}
+
+.home-form input:focus {
+  border-color: #2563eb;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.home-actions button {
+  min-height: 46px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.primary-button {
+  color: #fff;
+  background: #2563eb;
+}
+
+.join-section {
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.join-input {
+  display: flex;
+  gap: 8px;
+}
+
+.join-input input {
+  flex: 1;
+  min-width: 0;
+}
+
+.join-input button {
+  width: 76px;
+  color: #fff;
+  background: #334155;
+}
+
+.practice-button {
+  color: #334155;
+  background: #e9edf5;
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 28px 20px;
+  }
+}
