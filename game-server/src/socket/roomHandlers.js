@@ -14,6 +14,9 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
 
   // 이미 다른 방에 있던 소켓이면 먼저 나가게 한다
   const leaveCurrentRoom = (socket) => {
+    // 새 방 입장이 실패해도 이전 방 정보가 남지 않게 먼저 지운다
+    delete socket.data.roomId;
+    delete socket.data.playerId;
     const result = rooms.leave(socket.id);
     if (!result) return;
     socket.leave(result.room.roomId);

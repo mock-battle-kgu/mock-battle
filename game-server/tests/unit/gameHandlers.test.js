@@ -74,3 +74,11 @@ test('방에 들어가지 않은 소켓의 주문은 거부된다', async () => 
   const res = await request(stranger, 'order:place', { stock: 'GANA', side: 'buy', qty: 1 });
   expect(res.code).toBe('GAME_NOT_PLAYING');
 });
+
+test('다른 방 입장에 실패해 기존 방에서 나간 참가자는 주문할 수 없다', async () => {
+  const { host } = await startedRoom();
+  const join = await request(host, 'room:join', { roomId: '000000', nickname: '방장' });
+  expect(join.ok).toBe(false);
+  const res = await request(host, 'order:place', { stock: 'GANA', side: 'buy', qty: 10 });
+  expect(res).toMatchObject({ ok: false, code: 'GAME_NOT_PLAYING' });
+});
