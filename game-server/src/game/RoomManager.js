@@ -1,3 +1,4 @@
+
 // 방 생성·입장·시작·퇴장 규칙 (통신 코드 없음 → 서버 없이 테스트 가능)
 const MAX_PLAYERS = 8;
 const MIN_BATTLE_PLAYERS = 2;
@@ -69,10 +70,15 @@ class RoomManager {
     return { room, player };
   }
 
-  startRoom({ roomId, playerId }) {
+   startRoom({ roomId, playerId, socketId }) {
     const room = this.rooms.get(String(roomId ?? ''));
     if (!room) throw new RoomError('ROOM_NOT_FOUND', 'room not found');
     if (room.hostId !== playerId) throw new RoomError('NOT_HOST', 'only the host can start');
+    // playerId는 방마다 p1부터 다시 발급되므로, 요청한 소켓이 이 방의 방장 소켓인지도 확인한다
+    const host = room.players.find((p) => p.playerId === room.hostId);
+    if (socketId !== undefined && host?.socketId !== socketId) {
+      throw new RoomError('NOT_HOST', 'only the host can start');
+    }
     if (room.status !== 'waiting') throw new RoomError('GAME_STARTED', 'game already started');
     if (room.mode === 'battle' && room.players.length < MIN_BATTLE_PLAYERS) {
       throw new RoomError('NOT_ENOUGH_PLAYERS', 'battle needs at least 2 players');

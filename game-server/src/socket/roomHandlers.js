@@ -60,7 +60,11 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
 
     socket.on('room:start', (payload = {}, ack) => {
       respond(ack, () => {
-        const room = rooms.startRoom({ roomId: payload.roomId, playerId: socket.data.playerId });
+        const room = rooms.startRoom({
+          roomId: payload.roomId,
+          playerId: socket.data.playerId,
+          socketId: socket.id,
+        });
         broadcast(room);
         logger?.info({ roomId: room.roomId }, 'game started');
         onGameStart(room); // D단계에서 타이머·시장 시작을 여기에 연결

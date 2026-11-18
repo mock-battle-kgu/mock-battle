@@ -93,6 +93,17 @@ describe('게임 시작', () => {
     rooms.startRoom({ roomId: room.roomId, playerId: 'p1' });
     expect(room.status).toBe('playing');
   });
+
+  test('다른 방의 방장(같은 p1)은 시작할 수 없다', () => {
+    const rooms = new RoomManager();
+    rooms.createRoom({ nickname: '방장A', mode: 'battle', socketId: 'sA' });
+    const { room: roomB } = rooms.createRoom({ nickname: '방장B', mode: 'battle', socketId: 'sB' });
+    rooms.joinRoom({ roomId: roomB.roomId, nickname: '손님', socketId: 'sG' });
+    expectCode(() => rooms.startRoom({ roomId: roomB.roomId, playerId: 'p1', socketId: 'sA' }), 'NOT_HOST');
+    expect(roomB.status).toBe('waiting');
+    rooms.startRoom({ roomId: roomB.roomId, playerId: 'p1', socketId: 'sB' });
+    expect(roomB.status).toBe('playing');
+  });
 });
 
 describe('퇴장', () => {

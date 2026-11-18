@@ -85,3 +85,16 @@ test('대기실에서 방장이 나가면 남은 사람에게 방장이 넘어�
   expect(state.hostId).toBe('p2');
   expect(state.players.map((p) => p.playerId)).toEqual(['p2']);
 });
+
+test('다른 방의 방장은 같은 playerId여도 이 방을 시작할 수 없다', async () => {
+  const hostA = await connect();
+  await request(hostA, 'room:create', { nickname: '방장A', mode: 'battle' });
+  const hostB = await connect();
+  const { roomId: roomB } = await request(hostB, 'room:create', { nickname: '방장B', mode: 'battle' });
+  const guest = await connect();
+  await request(guest, 'room:join', { roomId: roomB, nickname: '손님' });
+
+  const res = await request(hostA, 'room:start', { roomId: roomB });
+  expect(res.code).toBe('NOT_HOST');
+  expect(started).toEqual([]);
+});
