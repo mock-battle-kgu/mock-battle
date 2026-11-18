@@ -81,6 +81,7 @@ class GameService {
 
   emitCandle(game, closed) {
     if (!closed) return;
+    if (Array.isArray(closed)) return closed.forEach((c) => this.emitCandle(game, c));
     game.candles.push(closed);
     this.io.to(game.roomId).emit('candle:close', closed);
   }
