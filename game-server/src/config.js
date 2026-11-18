@@ -11,6 +11,8 @@ module.exports = {
   // 게임 규칙 (docs/game-design.md 4장 초안)
   startCash: 10_000_000,
   rumorCards: 2,
+  // 틱 몇 개로 캔들 하나를 만들지 (1초 틱 × 5 = 5초 캔들)
+  candleTicks: 5,
   // 시세가 끊겨도 게임이 끝나도록 하는 여유 시간(초)
   backupGraceSec: 5,
   // 게임이 끝난 뒤 방을 지우기까지 기다리는 시간(밀리초)

@@ -33,6 +33,10 @@ async function main() {
   host.on('game:start', (g) =>
     console.log(`game:start → ${g.mode}, ${g.durationSec}초, 시작 자금 ${g.startCash}, 종목 ${g.stocks.map((s) => s.code).join(', ')}`));
   host.on('price:tick', (tick) => console.log(`price:tick t=${tick.t}`, JSON.stringify(tick.prices)));
+  host.on('candle:close', (c) => {
+    const [code, k] = Object.entries(c.candles)[0];
+    console.log(`  candle:close t=${c.t} ${code} 시${k.o} 고${k.h} 저${k.l} 종${k.c} (종목 ${Object.keys(c.candles).length}개)`);
+  });
   host.on('game:end', (end) => {
     console.log('game:end →', JSON.stringify(end));
     setTimeout(() => process.exit(0), 500);
