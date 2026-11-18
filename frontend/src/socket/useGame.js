@@ -8,6 +8,7 @@ const INITIAL_STATE = {
   game: null,
   prices: {},
   candles: {},
+  candleTime: null,
   portfolio: null,
   ranks: [],
   news: [],
@@ -21,39 +22,74 @@ export const useGame = () => {
   const [connectionStatus, setConnectionStatus] = useState(
     isMock ? 'mock' : 'disconnected',
   )
+
   const [gameState, setGameState] = useState(INITIAL_STATE)
 
   useEffect(() => {
     const handlers = {
-      'room:update': (data) =>
-        setGameState((prev) => ({ ...prev, room: data })),
+      'room:update': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          room: data,
+        }))
+      },
 
-      'game:start': (data) =>
-        setGameState((prev) => ({ ...prev, game: data })),
+      'game:start': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          game: data,
+        }))
+      },
 
-      'price:tick': (data) =>
-        setGameState((prev) => ({ ...prev, prices: data.prices })),
+      'price:tick': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          prices: data.prices,
+        }))
+      },
 
-      'candle:close': (data) =>
-        setGameState((prev) => ({ ...prev, candles: data.candles })),
+      'candle:close': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          candles: data.candles,
+          candleTime: data.t,
+        }))
+      },
 
-      'portfolio:update': (data) =>
-        setGameState((prev) => ({ ...prev, portfolio: data })),
+      'portfolio:update': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          portfolio: data,
+        }))
+      },
 
-      'rank:update': (data) =>
-        setGameState((prev) => ({ ...prev, ranks: data.ranks })),
+      'rank:update': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          ranks: data.ranks,
+        }))
+      },
 
-      'news:push': (data) =>
+      'news:push': (data) => {
         setGameState((prev) => ({
           ...prev,
           news: [...prev.news, data],
-        })),
+        }))
+      },
 
-      'market:flow': (data) =>
-        setGameState((prev) => ({ ...prev, marketFlow: data })),
+      'market:flow': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          marketFlow: data,
+        }))
+      },
 
-      'game:end': (data) =>
-        setGameState((prev) => ({ ...prev, result: data })),
+      'game:end': (data) => {
+        setGameState((prev) => ({
+          ...prev,
+          result: data,
+        }))
+      },
     }
 
     if (isMock) {
@@ -64,12 +100,22 @@ export const useGame = () => {
 
       const stopMockServer = startMockServer(emit)
 
-      return () => stopMockServer()
+      return () => {
+        stopMockServer()
+      }
     }
 
-    const handleConnect = () => setConnectionStatus('connected')
-    const handleDisconnect = () => setConnectionStatus('disconnected')
-    const handleConnectError = () => setConnectionStatus('disconnected')
+    const handleConnect = () => {
+      setConnectionStatus('connected')
+    }
+
+    const handleDisconnect = () => {
+      setConnectionStatus('disconnected')
+    }
+
+    const handleConnectError = () => {
+      setConnectionStatus('disconnected')
+    }
 
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
