@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries } from 'lightweight-charts'
+import { socket } from '../socket/socket'
 import './Game.css'
 
 const DEFAULT_STOCKS = [
@@ -12,9 +13,27 @@ const DEFAULT_STOCKS = [
   { code: 'KATA', name: '카타에너지', price: 38000 },
 ]
 
+const ERROR_MESSAGES = {
+  NOT_ENOUGH_CASH: '현금이 부족합니다.',
+  NOT_ENOUGH_SHARES: '보유 수량이 부족합니다.',
+  INVALID_QTY: '주문 수량을 확인해 주세요.',
+  GAME_NOT_PLAYING: '게임 진행 중에만 주문할 수 있습니다.',
+  SERVER_DISCONNECTED: '서버에 연결되어 있지 않습니다.',
+  REQUEST_TIMEOUT: '서버 응답 시간이 초과되었습니다.',
+}
+
+const formatWon = (value) =>
+  Number.isFinite(Number(value))
+    ? `${Number(value).toLocaleString('ko-KR')}원`
+    : '—'
+
 function Game({ gameState }) {
   const [selectedStock, setSelectedStock] = useState('GANA')
   const [chartHasData, setChartHasData] = useState(false)
+  const [quantity, setQuantity] = useState('1')
+  const [isOrdering, setIsOrdering] = useState(false)
+  const [orderMessage, setOrderMessage] = useState('')
+  const [orderMessageType, setOrderMessageType] = useState('')
 
   const chartContainerRef = useRef(null)
   const chartRef = useRef(null)
@@ -39,6 +58,61 @@ function Game({ gameState }) {
   const changePct = basePrice
     ? (change / basePrice) * 100
     : 0
+
+  const portfolio = gameState?.portfolio
+  const cash = portfolio?.cash
+  const holdings = portfolio?.holdings
+  const selectedHolding = holdings?.[selectedStock]
+  const holdingQuantity = selectedHolding?.qty ?? 0
+
+  const parsedQuantity = Number(quantity)
+  const validQuantity =
+    Number.isInteger(parsedQuantity) && parsedQuantity > 0
+
+  const roomId = gameState?.room?.roomId
+
+  const placeOrder = (side) => {
+    if (!validQuantity || isOrdering || !roomId || !socket.connected) {
+      return
+    }
+
+    setIsOrdering(true)
+    setOrderMessage('')
+    setOrderMessageType('')
+
+    const payload = {
+      roomId,
+      stock: selectedStock,
+      side,
+      qty: parsedQuantity,
+    }
+
+    socket.timeout(5000).emit('order:place', payload, (error, response) => {
+      setIsOrdering(false)
+
+      if (error) {
+        setOrderMessage(ERROR_MESSAGES.REQUEST_TIMEOUT)
+        setOrderMessageType('error')
+        return
+      }
+
+      if (!response?.ok) {
+        const code = response?.code
+        setOrderMessage(
+          ERROR_MESSAGES[code] ||
+            response?.message ||
+            '주문 처리에 실패했습니다.',
+        )
+        setOrderMessageType('error')
+        return
+      }
+
+      setOrderMessage(
+        side === 'buy' ? '매수 주문이 완료되었습니다.' : '매도 주문이 완료되었습니다.',
+      )
+      setOrderMessageType('success')
+    })
+  }
 
   // 차트 생성
   useEffect(() => {
@@ -206,15 +280,13 @@ function Game({ gameState }) {
                 className={`stock-tab ${
                   selectedStock === stock.code ? 'active' : ''
                 }`}
-                onClick={() => setSelectedStock(stock.code)}
+                onClick={() => {
+                  setSelectedStock(stock.code)
+                  setOrderMessage('')
+                }}
               >
-                <span className="stock-name">
-                  {stock.name}
-                </span>
-
-                <strong>
-                  {price?.toLocaleString()}원
-                </strong>
+                <span className="stock-name">{stock.name}</span>
+                <strong>{price?.toLocaleString()}원</strong>
               </button>
             )
           })}
@@ -237,9 +309,7 @@ function Game({ gameState }) {
           </p>
         </div>
 
-        <span className="price-unit">
-          실시간 현재가
-        </span>
+        <span className="price-unit">실시간 현재가</span>
       </section>
 
       <section className="chart-section">
@@ -275,6 +345,189 @@ function Game({ gameState }) {
               캔들 데이터 수신 대기 중
             </div>
           )}
+        </div>
+      </section>
+
+      <section
+        className="order-section"
+        style={{
+          marginTop: '24px',
+          padding: '24px',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          background: '#ffffff',
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>주문하기</h2>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '16px',
+            marginBottom: '20px',
+          }}
+        >
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              주문 종목
+            </p>
+            <strong>{selectedInfo?.name}</strong>
+          </div>
+
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              주문 가격
+            </p>
+            <strong>{formatWon(currentPrice)}</strong>
+          </div>
+
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              보유 수량
+            </p>
+            <strong>{Number(holdingQuantity).toLocaleString('ko-KR')}주</strong>
+          </div>
+        </div>
+
+        <label
+          htmlFor="order-quantity"
+          style={{
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 600,
+          }}
+        >
+          주문 수량
+        </label>
+
+        <input
+          id="order-quantity"
+          type="number"
+          min="1"
+          step="1"
+          value={quantity}
+          onChange={(event) => {
+            setQuantity(event.target.value)
+            setOrderMessage('')
+          }}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '12px',
+            border: '1px solid #cbd5e1',
+            borderRadius: '8px',
+            marginBottom: '16px',
+          }}
+        />
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+          }}
+        >
+          <button
+            type="button"
+            disabled={!validQuantity || isOrdering || !roomId || !socket.connected}
+            onClick={() => placeOrder('buy')}
+            style={{
+              flex: 1,
+              padding: '14px',
+              border: 0,
+              borderRadius: '8px',
+              color: '#ffffff',
+              background: '#ef4444',
+              cursor: 'pointer',
+              opacity:
+                !validQuantity || isOrdering || !roomId || !socket.connected
+                  ? 0.5
+                  : 1,
+            }}
+          >
+            {isOrdering ? '주문 처리 중' : '매수'}
+          </button>
+
+          <button
+            type="button"
+            disabled={!validQuantity || isOrdering || !roomId || !socket.connected}
+            onClick={() => placeOrder('sell')}
+            style={{
+              flex: 1,
+              padding: '14px',
+              border: 0,
+              borderRadius: '8px',
+              color: '#ffffff',
+              background: '#2563eb',
+              cursor: 'pointer',
+              opacity:
+                !validQuantity || isOrdering || !roomId || !socket.connected
+                  ? 0.5
+                  : 1,
+            }}
+          >
+            {isOrdering ? '주문 처리 중' : '매도'}
+          </button>
+        </div>
+
+        {orderMessage && (
+          <p
+            role="status"
+            style={{
+              marginBottom: 0,
+              color: orderMessageType === 'error' ? '#dc2626' : '#16a34a',
+            }}
+          >
+            {orderMessage}
+          </p>
+        )}
+      </section>
+
+      <section
+        className="portfolio-section"
+        style={{
+          marginTop: '24px',
+          padding: '24px',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          background: '#ffffff',
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>내 잔고</h2>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '16px',
+          }}
+        >
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              보유 현금
+            </p>
+            <strong>{cash == null ? '—' : formatWon(cash)}</strong>
+          </div>
+
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              보유 종목
+            </p>
+            <strong>
+              {selectedInfo?.name} {Number(holdingQuantity).toLocaleString('ko-KR')}주
+            </strong>
+          </div>
+
+          <div>
+            <p style={{ color: '#64748b', marginBottom: '6px' }}>
+              총자산
+            </p>
+            <strong>
+              {portfolio?.totalAsset == null
+                ? '—'
+                : formatWon(portfolio.totalAsset)}
+            </strong>
+          </div>
         </div>
       </section>
     </main>
