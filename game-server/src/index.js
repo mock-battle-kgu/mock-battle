@@ -4,6 +4,7 @@ const { createApp } = require('./app');
 const { MarketClient } = require('./mq/marketClient');
 const { RoomManager } = require('./game/RoomManager');
 const { GameService } = require('./game/GameService');
+const { ScenarioCatalog } = require('./game/ScenarioCatalog');
 const { registerRoomHandlers, broadcastRoom } = require('./socket/roomHandlers');
 const { registerGameHandlers } = require('./socket/gameHandlers');
 
@@ -14,6 +15,7 @@ async function main() {
   await market.connect();
 
   const rooms = new RoomManager();
+  const scenarios = ScenarioCatalog.load(config.scenarioDir, logger);
   const games = new GameService({
     io,
     market,
@@ -23,7 +25,8 @@ async function main() {
     startCash: config.startCash,
     rumorCards: config.rumorCards,
     candleTicks: config.candleTicks,
-    scenarioIds: config.scenarioIds,
+    scenarioIds: scenarios.ids().length > 0 ? scenarios.ids() : config.scenarioIds,
+    revealScenario: (id) => scenarios.reveal(id),
     backupGraceSec: config.backupGraceSec,
     endedRoomTtlMs: config.endedRoomTtlMs,
     broadcastRoom: (room) => broadcastRoom(io, room),

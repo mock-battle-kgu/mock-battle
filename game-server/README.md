@@ -42,7 +42,8 @@ npm run lint
 | RABBITMQ_URL | amqp://localhost | RabbitMQ 주소 |
 | API_URL | http://localhost:3000 | API 서버 주소 |
 | GAME_DURATION_SEC | 600 | 한 판 시간(초) |
-| SCENARIO_IDS | covid-2020,chip-2024,battery-2023,platform-2021 | 연습 모드 시나리오 목록 |
+| SCENARIO_DIR | ../scenarios | 연습 모드 시나리오 폴더 (index.json으로 시나리오 선택·정체 공개, Docker에서는 /app/scenarios) |
+| SCENARIO_IDS | covid-2020,chip-2024,battery-2023,platform-2021 | index.json을 못 읽을 때만 쓰는 예비 목록 |
 | LOG_DIR | ./logs | 로그 저장 폴더 (Docker에서는 볼륨) |
 | LOG_LEVEL | info | `debug`로 바꾸면 받은 시세도 로그에 출력 |
 
