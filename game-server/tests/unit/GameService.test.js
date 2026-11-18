@@ -160,3 +160,62 @@ describe('캔들', () => {
     expect(order.lastIndexOf('candle:close')).toBeLessThan(order.indexOf('game:end'));
   });
 });
+
+describe('주문', () => {
+  const order = (games, room, playerId, stock, side, qty) =>
+    games.placeOrder({ roomId: room.roomId, playerId, stock, side, qty });
+  const codeOf = (fn) => {
+    try {
+      fn();
+    } catch (err) {
+      return err.code;
+    }
+    return 'NO_ERROR';
+  };
+
+  test('서버가 가진 최신 시세로 체결된다', () => {
+    const { games, room } = setup();
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { GANA: 46_000 } });
+    games.handleTick({ roomId: room.roomId, t: 1, prices: { GANA: 46_500 } });
+    expect(order(games, room, 'p1', 'GANA', 'buy', 10)).toEqual({ price: 46_500, qty: 10, cash: 9_535_000 });
+    expect(games.get(room.roomId).orders).toEqual([
+      { t: 1, playerId: 'p1', stock: 'GANA', side: 'buy', qty: 10, price: 46_500 },
+    ]);
+  });
+
+  test('참가자마다 계좌가 따로다', () => {
+    const { games, room } = setup();
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { GANA: 46_000 } });
+    order(games, room, 'p1', 'GANA', 'buy', 100);
+    expect(codeOf(() => order(games, room, 'p2', 'GANA', 'sell', 1))).toBe('NOT_ENOUGH_SHARES');
+  });
+
+  test('게임 전·종료 후·참가자가 아니면 GAME_NOT_PLAYING', () => {
+    const { games, room } = setup({ durationSec: 5 });
+    expect(codeOf(() => order(games, room, 'p1', 'GANA', 'buy', 1))).toBe('GAME_NOT_PLAYING');
+    games.startGame(room);
+    expect(codeOf(() => order(games, room, 'p1', 'GANA', 'buy', 1))).toBe('GAME_NOT_PLAYING'); // 시세 도착 전
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { GANA: 46_000 } });
+    expect(codeOf(() => order(games, room, 'p9', 'GANA', 'buy', 1))).toBe('GAME_NOT_PLAYING');
+    games.handleTick({ roomId: room.roomId, t: 5, prices: { GANA: 46_000 } });
+    expect(codeOf(() => order(games, room, 'p1', 'GANA', 'buy', 1))).toBe('GAME_NOT_PLAYING');
+  });
+
+  test('없는 종목, 잘못된 side는 거부', () => {
+    const { games, room } = setup();
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { GANA: 46_000 } });
+    expect(codeOf(() => order(games, room, 'p1', 'ZZZZ', 'buy', 1))).toBe('INVALID_STOCK');
+    expect(codeOf(() => order(games, room, 'p1', 'GANA', 'hold', 1))).toBe('INVALID_SIDE');
+  });
+
+  test('연습 모드는 STOCK_A만 거래한다', () => {
+    const { games, room } = setup({ mode: 'practice' });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 0, prices: { STOCK_A: 10_000 } });
+    expect(order(games, room, 'p1', 'STOCK_A', 'buy', 5).cash).toBe(9_950_000);
+    expect(codeOf(() => order(games, room, 'p1', 'GANA', 'buy', 1))).toBe('INVALID_STOCK');
+  });
+});

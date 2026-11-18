@@ -2,6 +2,8 @@
 // 시계는 시세 엔진의 t를 따르고, 시세가 끊겨도 끝나도록 백업 타이머를 둔다.
 const { BATTLE_STOCKS, PRACTICE_STOCKS } = require('./stocks');
 const { CandleBuilder } = require('./CandleBuilder');
+const { Portfolio } = require('./Portfolio');
+const { GameError } = require('./errors');
 
 class GameService {
   constructor({
@@ -38,6 +40,10 @@ class GameService {
       scenarioId: isBattle ? null : this.pickScenario(),
       candleBuilder: new CandleBuilder(this.candleTicks),
       candles: [], // 완성된 캔들 기록 (결과 화면·복기용)
+      stockCodes: stocks.map((s) => s.code),
+      // 참가자마다 시작 자금으로 계좌를 만든다
+      portfolios: new Map(room.players.map((p) => [p.playerId, new Portfolio(this.startCash)])),
+      orders: [], // 체결 기록 (플레이어 시장 영향·결과 분석용)
       backupTimer: null,
     };
     this.games.set(room.roomId, game);
@@ -77,6 +83,23 @@ class GameService {
     this.io.to(roomId).emit('price:tick', { t, prices });
     this.emitCandle(game, game.candleBuilder.add(t, prices));
     if (t >= this.durationSec) this.endGame(roomId, 'time');
+  }
+
+  // order:place 처리: 서버가 가진 최신 시세로 즉시 체결 (화면이 보낸 가격은 받지 않음)
+  placeOrder({ roomId, playerId, stock, side, qty }) {
+    const game = this.games.get(roomId);
+    if (!game || game.ended) throw new GameError('GAME_NOT_PLAYING', 'game is not playing');
+    const portfolio = game.portfolios.get(playerId);
+    if (!portfolio) throw new GameError('GAME_NOT_PLAYING', 'player is not in this game');
+    if (!game.stockCodes.includes(stock)) throw new GameError('INVALID_STOCK', 'unknown stock');
+    if (side !== 'buy' && side !== 'sell') throw new GameError('INVALID_SIDE', 'side must be buy or sell');
+    const price = game.prices[stock];
+    if (price === undefined) throw new GameError('GAME_NOT_PLAYING', 'price is not ready yet');
+
+    const result = side === 'buy' ? portfolio.buy(stock, qty, price) : portfolio.sell(stock, qty, price);
+    game.orders.push({ t: game.t, playerId, stock, side, qty, price });
+    this.logger?.debug({ roomId, playerId, stock, side, qty, price }, 'order filled');
+    return result;
   }
 
   emitCandle(game, closed) {

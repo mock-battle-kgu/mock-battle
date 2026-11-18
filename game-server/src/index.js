@@ -5,6 +5,7 @@ const { MarketClient } = require('./mq/marketClient');
 const { RoomManager } = require('./game/RoomManager');
 const { GameService } = require('./game/GameService');
 const { registerRoomHandlers, broadcastRoom } = require('./socket/roomHandlers');
+const { registerGameHandlers } = require('./socket/gameHandlers');
 
 async function main() {
   const { server, io } = createApp({ logger });
@@ -30,6 +31,7 @@ async function main() {
 
   market.onTick((tick) => games.handleTick(tick));
   registerRoomHandlers({ io, rooms, logger, onGameStart: (room) => games.startGame(room) });
+  registerGameHandlers({ io, games, logger });
 
   server.listen(config.port, () => {
     logger.info({ port: config.port, gameDurationSec: config.gameDurationSec }, 'game-server started');
