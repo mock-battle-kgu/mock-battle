@@ -3,6 +3,8 @@ const logger = require('./logger');
 const { createApp } = require('./app');
 const { MarketClient } = require('./mq/marketClient');
 const { connectMarketToSockets } = require('./socket/marketBridge');
+const { RoomManager } = require('./game/RoomManager');
+const { registerRoomHandlers } = require('./socket/roomHandlers');
 
 async function main() {
   const { server, io } = createApp({ logger });
@@ -10,6 +12,9 @@ async function main() {
   const market = new MarketClient({ url: config.rabbitmqUrl, logger });
   await market.connect();
   connectMarketToSockets({ market, io, logger });
+
+  const rooms = new RoomManager();
+  registerRoomHandlers({ io, rooms, logger });
 
   server.listen(config.port, () => {
     logger.info({ port: config.port }, 'game-server started');
