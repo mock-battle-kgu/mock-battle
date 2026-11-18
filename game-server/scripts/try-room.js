@@ -37,11 +37,19 @@ async function main() {
     const [code, k] = Object.entries(c.candles)[0];
     console.log(`  candle:close t=${c.t} ${code} 시${k.o} 고${k.h} 저${k.l} 종${k.c} (종목 ${Object.keys(c.candles).length}개)`);
   });
+  host.on('rank:update', (r) => {
+    if (r.t % 5 === 0) console.log(`  rank:update t=${r.t}`, r.ranks.map((x) => `${x.rank}위 ${x.nickname} ${x.returnPct}%`).join(' / '));
+  });
+  host.on('portfolio:update', (p) => {
+    lastPortfolio = p;
+  });
   host.on('game:end', (end) => {
-    console.log('game:end →', JSON.stringify(end));
+    console.log('  내 계좌(마지막) →', JSON.stringify(lastPortfolio));
+    console.log('game:end 최종 순위 →', end.ranks.map((x) => `${x.rank}위 ${x.nickname} ${x.returnPct}% (${x.totalAsset}원)`).join(' / '));
     setTimeout(() => process.exit(0), 500);
   });
 
+  let lastPortfolio = null;
   // 시세가 들어오기 시작하면 주문을 몇 번 넣어 본다
   const stock = mode === 'battle' ? 'GANA' : 'STOCK_A';
   const orders = {
@@ -52,7 +60,9 @@ async function main() {
   };
   host.on('price:tick', async (tick) => {
     const order = orders[tick.t];
-    if (order) console.log(`  order:place ${order.side} ${order.qty}주 →`, await request(host, 'order:place', order));
+    if (!order) return;
+    console.log(`  order:place ${order.side} ${order.qty}주 →`, await request(host, 'order:place', order));
+    console.log('  portfolio:update →', JSON.stringify(lastPortfolio));
   });
 
   console.log('room:start →', await request(host, 'room:start', { roomId: created.roomId }));
