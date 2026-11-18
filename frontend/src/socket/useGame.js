@@ -11,6 +11,8 @@ const INITIAL_STATE = {
   candleTime: null,
   portfolio: null,
   ranks: [],
+  rankElapsedTime: 0,
+  playerId: null,
   news: [],
   marketFlow: null,
   result: null,
@@ -38,6 +40,7 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           game: data,
+          rankElapsedTime: 0,
         }))
       },
 
@@ -67,6 +70,9 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           ranks: data.ranks,
+          rankElapsedTime: Number.isFinite(data.t)
+            ? data.t
+            : prev.rankElapsedTime,
         }))
       },
 
@@ -165,11 +171,37 @@ export const useGame = () => {
       })
     })
 
-  const createRoom = ({ nickname, mode }) =>
-    emitWithAck('room:create', { nickname, mode })
+  const createRoom = async ({ nickname, mode }) => {
+    const response = await emitWithAck('room:create', {
+      nickname,
+      mode,
+    })
 
-  const joinRoom = ({ nickname, roomId }) =>
-    emitWithAck('room:join', { nickname, roomId })
+    if (response?.ok && response.playerId) {
+      setGameState((prev) => ({
+        ...prev,
+        playerId: response.playerId,
+      }))
+    }
+
+    return response
+  }
+
+  const joinRoom = async ({ nickname, roomId }) => {
+    const response = await emitWithAck('room:join', {
+      nickname,
+      roomId,
+    })
+
+    if (response?.ok && response.playerId) {
+      setGameState((prev) => ({
+        ...prev,
+        playerId: response.playerId,
+      }))
+    }
+
+    return response
+  }
 
   return {
     connectionStatus,
