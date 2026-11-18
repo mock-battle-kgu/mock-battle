@@ -1,13 +1,16 @@
 
 services:
-  nginx:
-    image: nginx:1.27-alpine
+  nginx:        
+    build: ./frontend
     ports:
       - "80:80"
     networks:
       - frontend
     volumes:
       - nginx-logs:/var/log/nginx
+    depends_on:
+      - game-server
+      - api-server
     restart: unless-stopped
 
   game-server:
