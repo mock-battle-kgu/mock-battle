@@ -11,7 +11,7 @@ const INITIAL_STATE = {
   candleTime: null,
   portfolio: null,
   ranks: [],
-  rankElapsedTime: 0,
+  elapsedTime: 0, // 게임 경과 시간 (price:tick의 t)
   playerId: null,
   news: [],
   marketFlow: null,
@@ -40,7 +40,7 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           game: data,
-          rankElapsedTime: 0,
+          elapsedTime: 0,
         }))
       },
 
@@ -48,6 +48,8 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           prices: data.prices,
+          // 남은 시간 계산용: 모든 모드에서 매초 오는 price:tick의 t를 사용
+          elapsedTime: Number.isFinite(data.t) ? data.t : prev.elapsedTime,
           // t=0 시작가를 기준가로 저장하고, 이후에는 처음 받은 가격을 유지
           basePrices:
             data.t === 0
@@ -75,9 +77,6 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           ranks: data.ranks,
-          rankElapsedTime: Number.isFinite(data.t)
-            ? data.t
-            : prev.rankElapsedTime,
         }))
       },
 

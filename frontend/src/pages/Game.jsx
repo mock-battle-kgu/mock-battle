@@ -101,7 +101,7 @@ function Game({ gameState }) {
   const ranks = gameState?.ranks ?? []
   const playerId = gameState?.playerId
   const durationSec = gameState?.game?.durationSec ?? 600
-  const elapsedTime = gameState?.rankElapsedTime ?? 0
+  const elapsedTime = gameState?.elapsedTime ?? 0
   const remainingTime = Math.max(0, durationSec - elapsedTime)
 
   const sortedRanks = [...ranks].sort(
