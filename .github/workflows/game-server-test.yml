@@ -1,0 +1,31 @@
+name: 게임 서버 테스트
+
+on:
+  pull_request:
+    paths:
+      - "game-server/**"
+      - ".github/workflows/game-server-test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: game-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: game-server/package-lock.json
+
+      - name: 패키지 설치
+        run: npm ci
+
+      - name: 린트
+        run: npm run lint
+
+      - name: 테스트
+        run: npm test
