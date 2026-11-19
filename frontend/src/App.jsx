@@ -20,7 +20,6 @@ import './App.css'
 
 function AppContent() {
   const {
-    connectionStatus,
     gameState,
     createRoom,
     joinRoom,
@@ -35,27 +34,23 @@ function AppContent() {
     }
   }, [gameState.result, navigate])
 
-  const statusText = {
-    mock: 'Mock 서버 연결',
-    connected: '서버 연결됨',
-    disconnected: '서버 연결 끊김',
-  }
-
   return (
     <div>
-      {location.pathname !== '/game' && (
-        <div className={`connection-status ${connectionStatus}`}>
-          {statusText[connectionStatus]}
-        </div>
-      )}
-
       <Routes>
         <Route
           path="/"
-          element={<Home createRoom={createRoom} joinRoom={joinRoom} />}
+          element={
+            <Home
+              createRoom={createRoom}
+              joinRoom={joinRoom}
+            />
+          }
         />
 
-        <Route path="/waiting" element={<WaitingRoom />} />
+        <Route
+          path="/waiting"
+          element={<WaitingRoom />}
+        />
 
         <Route
           path="/game"
@@ -68,13 +63,23 @@ function AppContent() {
             <Result
               result={gameState.result}
               playerId={gameState.playerId}
-              mode={gameState.game?.mode || gameState.room?.mode}
+              mode={
+                gameState.game?.mode ||
+                gameState.room?.mode
+              }
             />
           }
         />
 
-        <Route path="/hall-of-fame" element={<HallOfFame />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/hall-of-fame"
+          element={<HallOfFame />}
+        />
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
       </Routes>
     </div>
   )
