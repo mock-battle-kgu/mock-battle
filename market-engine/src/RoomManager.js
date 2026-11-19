@@ -1,5 +1,6 @@
 // market.control 메시지를 받아 방별 MarketRoom을 만들고 없앰
 const MarketRoom = require("./MarketRoom");
+const STOCKS = require("./data/stocks.json");
 
 const MODES = ["battle", "practice"];
 
@@ -12,6 +13,9 @@ function validateStart(msg) {
   }
   if (msg.mode === "battle" && (!Array.isArray(msg.stocks) || msg.stocks.length === 0)) {
     return "대결 모드에 stocks 없음";
+  }
+  if (msg.mode === "battle" && msg.stocks.some((code) => !STOCKS[code])) {
+    return "알 수 없는 종목 코드";
   }
   if (msg.mode === "practice" && typeof msg.scenarioId !== "string") {
     return "연습 모드에 scenarioId 없음";
@@ -51,17 +55,24 @@ class RoomManager {
       return;
     }
 
-    const room = new MarketRoom(msg, {
-      tickMs: this.tickMs,
-      onTick: (r) => this.onTick(r),
-      onEnd: (r) => {
-        this.rooms.delete(r.roomId);
-        this.logger.info({ roomId: r.roomId }, "시간 종료로 방 시장 종료");
-      },
-    });
+    let room;
+    try {
+      room = new MarketRoom(msg, {
+        tickMs: this.tickMs,
+        onTick: (r) => this.onTick(r),
+        onEnd: (r) => {
+          this.rooms.delete(r.roomId);
+          this.logger.info({ roomId: r.roomId }, "시간 종료로 방 시장 종료");
+        },
+      });
+    } catch (err) {
+      // 예: 없는 scenarioId, 시나리오 파일 오류
+      this.logger.warn({ roomId: msg.roomId, error: err.message }, "방 시장을 만들 수 없음, start 무시");
+      return;
+    }
     this.rooms.set(msg.roomId, room);
     this.logger.info(
-      { roomId: msg.roomId, mode: msg.mode, rooms: this.rooms.size },
+      { roomId: msg.roomId, mode: msg.mode, seed: room.seed, rooms: this.rooms.size },
       "방 시장 시작"
     );
     room.start();

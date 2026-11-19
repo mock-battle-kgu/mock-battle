@@ -1,0 +1,175 @@
+
+.game-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 32px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.game-label {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.game-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.game-timer {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stock-section,
+.price-section,
+.chart-section {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.stock-section h2,
+.chart-section h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.stock-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.stock-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.stock-tab:hover {
+  border-color: #94a3b8;
+}
+
+.stock-tab.active {
+  border: 2px solid #2563eb;
+  background: #eff6ff;
+}
+
+.stock-name {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.stock-tab strong {
+  font-size: 15px;
+}
+
+.price-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price-stock-name {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.price-section h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.price-section p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.price-up {
+  color: #ef4444;
+}
+
+.price-down {
+  color: #2563eb;
+}
+
+.price-unit {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-heading span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.chart-container {
+  width: 100%;
+  min-height: 360px;
+}
+
+@media (max-width: 900px) {
+  .stock-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .game-page {
+    padding: 16px;
+  }
+
+  .game-header h1 {
+    font-size: 22px;
+  }
+
+  .stock-section,
+  .price-section,
+  .chart-section {
+    padding: 16px;
+  }
+
+  .stock-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .price-section h2 {
+    font-size: 24px;
+  }
+}
