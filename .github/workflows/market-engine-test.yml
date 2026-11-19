@@ -1,0 +1,32 @@
+name: 시세 엔진 테스트
+
+on:
+  pull_request:
+    paths:
+      - "market-engine/**"
+      - "scenarios/**"
+      - ".github/workflows/market-engine-test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: market-engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: market-engine/package-lock.json
+
+      - name: 패키지 설치
+        run: npm ci
+
+      - name: 린트
+        run: npm run lint
+
+      - name: 테스트
+        run: npm test
