@@ -1,4 +1,5 @@
 const MarketRoom = require("../src/MarketRoom");
+const { Replay } = require("../src/model/Replay");
 
 function createRoom(overrides = {}) {
   const ticks = [];
@@ -79,5 +80,21 @@ describe("MarketRoom", () => {
     jest.advanceTimersByTime(5000);
     expect(b.prices).toEqual(a.prices.slice(0, b.prices.length));
     expect(a.prices.length).toBe(11);
+  });
+
+  test("연습 모드: STOCK_A 하나로 과거 주가 재생, t=0은 첫날 시가", () => {
+    const replay = Replay.load("covid-2020");
+    const { room, prices } = createRoom({ mode: "practice", stocks: [], scenarioId: "covid-2020", durationSec: 600 });
+    room.start();
+    jest.advanceTimersByTime(10000);
+    expect(Object.keys(prices[0])).toEqual(["STOCK_A"]);
+    expect(prices[0].STOCK_A).toBe(replay.days[0].open);
+    expect(prices.map((p) => p.STOCK_A)).toEqual(
+      Array.from({ length: 11 }, (_, t) => replay.priceAt(t))
+    );
+  });
+
+  test("연습 모드: 없는 시나리오면 방을 만들 수 없음", () => {
+    expect(() => createRoom({ mode: "practice", stocks: [], scenarioId: "nope" })).toThrow();
   });
 });

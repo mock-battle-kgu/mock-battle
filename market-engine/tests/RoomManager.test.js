@@ -111,4 +111,10 @@ describe("RoomManager", () => {
     manager.handleControl({ ...battleStart("482913"), stocks: ["GANA", "NOPE"] });
     expect(manager.rooms.size).toBe(0);
   });
+
+  test("없는 시나리오로 연습 모드 start하면 무시", () => {
+    const { manager } = createManager();
+    manager.handleControl({ type: "start", roomId: "771205", mode: "practice", durationSec: 600, scenarioId: "nope" });
+    expect(manager.rooms.size).toBe(0);
+  });
 });
