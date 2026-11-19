@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Home.css'
 
+// 대결 모드 대기실은 v0.3에서 구현 예정. 완성되면 true로 바꿔 방 만들기·입장을 다시 연다
+const BATTLE_AVAILABLE = false
+
 function Home({ createRoom, joinRoom }) {
   const navigate = useNavigate()
 
@@ -51,6 +54,7 @@ function Home({ createRoom, joinRoom }) {
   }
 
   const handleCreateRoom = () => {
+    if (!BATTLE_AVAILABLE) return
     handleRequest(
       () => createRoom({ nickname: trimmedNickname, mode: 'battle' }),
       '/waiting',
@@ -58,7 +62,7 @@ function Home({ createRoom, joinRoom }) {
   }
 
   const handleJoinRoom = () => {
-    if (!isRoomIdValid) return
+    if (!BATTLE_AVAILABLE || !isRoomIdValid) return
 
     handleRequest(
       () => joinRoom({ nickname: trimmedNickname, roomId }),
@@ -100,7 +104,7 @@ function Home({ createRoom, joinRoom }) {
             <button
               type="button"
               className="primary-button"
-              disabled={!isNicknameValid || pending}
+              disabled={!BATTLE_AVAILABLE || !isNicknameValid || pending}
               onClick={handleCreateRoom}
             >
               {pending ? '처리 중...' : '방 만들기'}
@@ -116,20 +120,28 @@ function Home({ createRoom, joinRoom }) {
                   placeholder="6자리 PIN"
                   value={roomId}
                   maxLength={6}
-                  disabled={pending}
+                  disabled={!BATTLE_AVAILABLE || pending}
                   onChange={(event) =>
                     setRoomId(event.target.value.replace(/\D/g, ''))
                   }
                 />
                 <button
                   type="button"
-                  disabled={!isNicknameValid || !isRoomIdValid || pending}
+                  disabled={
+                    !BATTLE_AVAILABLE || !isNicknameValid || !isRoomIdValid || pending
+                  }
                   onClick={handleJoinRoom}
                 >
                   입장
                 </button>
               </div>
             </div>
+
+            {!BATTLE_AVAILABLE && (
+              <p className="home-notice">
+                대결 모드는 준비 중이에요. 지금은 혼자 연습하기만 할 수 있어요.
+              </p>
+            )}
 
             <button
               type="button"

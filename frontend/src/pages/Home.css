@@ -117,3 +117,14 @@
     padding: 28px 20px;
   }
 }
+
+
+.home-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #475569;
+  background: #f1f5f9;
+  font-size: 13px;
+  word-break: keep-all;
+}
