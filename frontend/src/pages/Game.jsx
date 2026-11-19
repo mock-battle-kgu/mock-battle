@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries } from 'lightweight-charts'
 import { socket } from '../socket/socket'
@@ -46,7 +45,7 @@ const formatReturn = (value) => {
 }
 
 function Game({ gameState }) {
-  const [selectedStock, setSelectedStock] = useState('GANA')
+  const [pickedStock, setSelectedStock] = useState('GANA')
   const [chartHasData, setChartHasData] = useState(false)
   const [quantity, setQuantity] = useState('1')
   const [isOrdering, setIsOrdering] = useState(false)
@@ -65,13 +64,22 @@ function Game({ gameState }) {
     ? gameState.game.stocks
     : DEFAULT_STOCKS
 
+  // 고른 종목이 이번 게임에 없으면(연습 모드 STOCK_A 등) 첫 종목을 선택
+  const selectedStock = stocks.some((stock) => stock.code === pickedStock)
+    ? pickedStock
+    : stocks[0]?.code
+
   const selectedInfo =
     stocks.find((stock) => stock.code === selectedStock) || stocks[0]
 
   const currentPrice =
     gameState?.prices?.[selectedStock] ?? selectedInfo?.price ?? 0
 
-  const basePrice = selectedInfo?.price ?? currentPrice
+  // 기준가: game:start의 가격 → 없으면 처음 받은 시세(t=0 시작가)
+  const basePrice =
+    selectedInfo?.price ??
+    gameState?.basePrices?.[selectedStock] ??
+    currentPrice
   const change = currentPrice - basePrice
   const changePct = basePrice
     ? (change / basePrice) * 100
@@ -93,7 +101,7 @@ function Game({ gameState }) {
   const ranks = gameState?.ranks ?? []
   const playerId = gameState?.playerId
   const durationSec = gameState?.game?.durationSec ?? 600
-  const elapsedTime = gameState?.rankElapsedTime ?? 0
+  const elapsedTime = gameState?.elapsedTime ?? 0
   const remainingTime = Math.max(0, durationSec - elapsedTime)
 
   const sortedRanks = [...ranks].sort(

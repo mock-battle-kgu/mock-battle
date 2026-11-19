@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { socket, connectSocket, disconnectSocket } from './socket'
 import { startMockServer } from '../mock/mockServer'
@@ -7,11 +6,12 @@ const INITIAL_STATE = {
   room: null,
   game: null,
   prices: {},
+  basePrices: {}, // 종목별 시작가 (등락률 기준)
   candles: {},
   candleTime: null,
   portfolio: null,
   ranks: [],
-  rankElapsedTime: 0,
+  elapsedTime: 0, // 게임 경과 시간 (price:tick의 t)
   playerId: null,
   news: [],
   marketFlow: null,
@@ -21,11 +21,12 @@ const INITIAL_STATE = {
 const resetGameData = {
   game: null,
   prices: {},
+  basePrices: {},
   candles: {},
   candleTime: null,
   portfolio: null,
   ranks: [],
-  rankElapsedTime: 0,
+  elapsedTime: 0,
   news: [],
   marketFlow: null,
   result: null,
@@ -64,6 +65,13 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           prices: data.prices,
+          // 남은 시간 계산용: 모든 모드에서 매초 오는 price:tick의 t를 사용
+          elapsedTime: Number.isFinite(data.t) ? data.t : prev.elapsedTime,
+          // t=0 시작가를 기준가로 저장하고, 이후에는 처음 받은 가격을 유지
+          basePrices:
+            data.t === 0
+              ? data.prices
+              : { ...data.prices, ...prev.basePrices },
         }))
       },
 
@@ -86,9 +94,6 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           ranks: data.ranks,
-          rankElapsedTime: Number.isFinite(data.t)
-            ? data.t
-            : prev.rankElapsedTime,
         }))
       },
 
