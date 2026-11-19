@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createChart, CandlestickSeries } from 'lightweight-charts'
+import { createChart, CandlestickSeries, LineStyle } from 'lightweight-charts'
 import { socket } from '../socket/socket'
 import './Game.css'
 
@@ -90,6 +90,7 @@ function Game({ gameState }) {
   const holdings = portfolio?.holdings
   const selectedHolding = holdings?.[selectedStock]
   const holdingQuantity = selectedHolding?.qty ?? 0
+  const avgPrice = selectedHolding?.avgPrice ?? null
 
   const parsedQuantity = Number(quantity)
   const validQuantity =
@@ -224,6 +225,26 @@ function Game({ gameState }) {
 
     setChartHasData(history.length > 0)
   }, [selectedStock])
+
+  // 선택한 종목을 보유 중이면 평단가를 차트에 점선으로 표시
+  useEffect(() => {
+    const series = seriesRef.current
+    if (!series || !avgPrice || holdingQuantity <= 0) return undefined
+
+    const line = series.createPriceLine({
+      price: avgPrice,
+      color: '#f59e0b',
+      lineWidth: 2,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: '평단가',
+    })
+
+    return () => {
+      // 차트가 이미 지워진 경우(화면 이동)에는 건너뜀
+      if (seriesRef.current === series) series.removePriceLine(line)
+    }
+  }, [selectedStock, avgPrice, holdingQuantity])
 
   // 서버에서 받은 캔들 데이터 반영
   useEffect(() => {
@@ -576,6 +597,11 @@ function Game({ gameState }) {
             <strong>
               {Number(holdingQuantity).toLocaleString('ko-KR')}주
             </strong>
+            {holdingQuantity > 0 && avgPrice && (
+              <p style={{ color: '#f59e0b', marginTop: '4px', fontSize: '13px' }}>
+                평단가 {formatWon(avgPrice)}
+              </p>
+            )}
           </div>
         </div>
 
