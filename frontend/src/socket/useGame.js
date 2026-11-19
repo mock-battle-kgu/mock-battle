@@ -18,6 +18,20 @@ const INITIAL_STATE = {
   result: null,
 }
 
+const resetGameData = {
+  game: null,
+  prices: {},
+  basePrices: {},
+  candles: {},
+  candleTime: null,
+  portfolio: null,
+  ranks: [],
+  elapsedTime: 0,
+  news: [],
+  marketFlow: null,
+  result: null,
+}
+
 export const useGame = () => {
   const isMock = import.meta.env.VITE_MOCK === 'true'
 
@@ -32,15 +46,18 @@ export const useGame = () => {
       'room:update': (data) => {
         setGameState((prev) => ({
           ...prev,
-          room: data,
+          room: {
+            ...prev.room,
+            ...data,
+          },
         }))
       },
 
       'game:start': (data) => {
         setGameState((prev) => ({
           ...prev,
+          ...resetGameData,
           game: data,
-          elapsedTime: 0,
         }))
       },
 
@@ -181,11 +198,32 @@ export const useGame = () => {
       mode,
     })
 
-    if (response?.ok && response.playerId) {
-      setGameState((prev) => ({
-        ...prev,
-        playerId: response.playerId,
-      }))
+    if (!response?.ok || !response.roomId) {
+      return response
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      ...resetGameData,
+      room: {
+        roomId: response.roomId,
+        mode,
+      },
+      playerId: response.playerId,
+    }))
+
+    // 연습 모드는 방 생성 직후 게임 시작
+    if (mode === 'practice') {
+      const startResponse = await emitWithAck('room:start', {
+        roomId: response.roomId,
+      })
+
+      if (!startResponse?.ok) {
+        return {
+          ...startResponse,
+          roomCreated: true,
+        }
+      }
     }
 
     return response
@@ -193,13 +231,17 @@ export const useGame = () => {
 
   const joinRoom = async ({ nickname, roomId }) => {
     const response = await emitWithAck('room:join', {
-      nickname,
       roomId,
+      nickname,
     })
 
     if (response?.ok && response.playerId) {
       setGameState((prev) => ({
         ...prev,
+        room: {
+          ...prev.room,
+          roomId,
+        },
         playerId: response.playerId,
       }))
     }

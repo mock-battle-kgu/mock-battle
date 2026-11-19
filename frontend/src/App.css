@@ -1,7 +1,9 @@
+
 main {
   width: 100%;
   min-height: 100vh;
   padding: 40px;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -37,4 +39,10 @@ h1 {
   color: #dc2626;
   background: #fef2f2;
   border-color: #fecaca;
+}
+
+.connection-status.mock {
+  color: #475569;
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
