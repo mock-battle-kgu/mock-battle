@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { socket, connectSocket, disconnectSocket } from './socket'
 import { startMockServer } from '../mock/mockServer'
@@ -7,6 +6,7 @@ const INITIAL_STATE = {
   room: null,
   game: null,
   prices: {},
+  basePrices: {}, // 종목별 시작가 (등락률 기준)
   candles: {},
   candleTime: null,
   portfolio: null,
@@ -45,6 +45,11 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           prices: data.prices,
+          // t=0 시작가를 기준가로 저장하고, 이후에는 처음 받은 가격을 유지
+          basePrices:
+            data.t === 0
+              ? data.prices
+              : { ...data.prices, ...prev.basePrices },
         }))
       },
 
