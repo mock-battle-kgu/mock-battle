@@ -1,4 +1,4 @@
-// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control 구독
+// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control 구독 → market.tick 발행
 const amqp = require("amqplib");
 const config = require("./config");
 const logger = require("./logger");
@@ -33,11 +33,23 @@ async function main() {
   await channel.assertExchange(exchange, "topic", { durable: true });
   logger.info({ exchange }, "exchange 선언 완료");
 
+  // 게임 서버로 메시지 발행 (protocol.md 3장)
+  const publish = (routingKey, body) =>
+    channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(body)), {
+      contentType: "application/json",
+    });
+
   const rooms = new RoomManager({
     tickMs: config.tickMs,
     logger,
-    // C단계에서 가격 계산과 market.tick 발행으로 바뀝니다
-    onTick: (room) => logger.debug({ roomId: room.roomId, t: room.t }, "tick"),
+    onTick: (room) => {
+      const codes = Object.keys(room.prices);
+      if (codes.length === 0) return; // 연습 모드 재생은 E단계에서 추가
+      // impactPct(플레이어 영향)는 G단계 전까지 0으로 보냄
+      const impactPct = Object.fromEntries(codes.map((code) => [code, 0]));
+      publish("market.tick", { roomId: room.roomId, t: room.t, prices: room.prices, impactPct });
+      logger.debug({ roomId: room.roomId, t: room.t, prices: room.prices }, "tick 발행");
+    },
   });
 
   // market.control 구독: 엔진 전용 임시 큐 (엔진이 꺼지면 자동 삭제)

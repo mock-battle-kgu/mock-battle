@@ -105,4 +105,10 @@ describe("RoomManager", () => {
     manager.stopAll();
     expect(manager.rooms.size).toBe(0);
   });
+
+  test("stocks.json에 없는 종목으로 start하면 무시", () => {
+    const { manager } = createManager();
+    manager.handleControl({ ...battleStart("482913"), stocks: ["GANA", "NOPE"] });
+    expect(manager.rooms.size).toBe(0);
+  });
 });
