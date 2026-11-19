@@ -11,6 +11,8 @@ const INITIAL_STATE = {
   candleTime: null,
   portfolio: null,
   ranks: [],
+  elapsedTime: 0, // 게임 경과 시간 (price:tick의 t)
+  playerId: null,
   news: [],
   marketFlow: null,
   result: null,
@@ -38,6 +40,7 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           game: data,
+          elapsedTime: 0,
         }))
       },
 
@@ -45,6 +48,8 @@ export const useGame = () => {
         setGameState((prev) => ({
           ...prev,
           prices: data.prices,
+          // 남은 시간 계산용: 모든 모드에서 매초 오는 price:tick의 t를 사용
+          elapsedTime: Number.isFinite(data.t) ? data.t : prev.elapsedTime,
           // t=0 시작가를 기준가로 저장하고, 이후에는 처음 받은 가격을 유지
           basePrices:
             data.t === 0
@@ -170,11 +175,37 @@ export const useGame = () => {
       })
     })
 
-  const createRoom = ({ nickname, mode }) =>
-    emitWithAck('room:create', { nickname, mode })
+  const createRoom = async ({ nickname, mode }) => {
+    const response = await emitWithAck('room:create', {
+      nickname,
+      mode,
+    })
 
-  const joinRoom = ({ nickname, roomId }) =>
-    emitWithAck('room:join', { nickname, roomId })
+    if (response?.ok && response.playerId) {
+      setGameState((prev) => ({
+        ...prev,
+        playerId: response.playerId,
+      }))
+    }
+
+    return response
+  }
+
+  const joinRoom = async ({ nickname, roomId }) => {
+    const response = await emitWithAck('room:join', {
+      nickname,
+      roomId,
+    })
+
+    if (response?.ok && response.playerId) {
+      setGameState((prev) => ({
+        ...prev,
+        playerId: response.playerId,
+      }))
+    }
+
+    return response
+  }
 
   return {
     connectionStatus,

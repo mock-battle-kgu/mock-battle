@@ -26,6 +26,24 @@ const formatWon = (value) =>
     ? `${Number(value).toLocaleString('ko-KR')}원`
     : '—'
 
+const formatTime = (seconds) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds))
+  const minutes = Math.floor(safeSeconds / 60)
+  const remainingSeconds = safeSeconds % 60
+
+  return `${String(minutes).padStart(2, '0')}:${String(
+    remainingSeconds,
+  ).padStart(2, '0')}`
+}
+
+const formatReturn = (value) => {
+  const number = Number(value)
+
+  if (!Number.isFinite(number)) return '—'
+
+  return `${number > 0 ? '+' : ''}${number.toFixed(2)}%`
+}
+
 function Game({ gameState }) {
   const [pickedStock, setSelectedStock] = useState('GANA')
   const [chartHasData, setChartHasData] = useState(false)
@@ -79,6 +97,17 @@ function Game({ gameState }) {
 
   const roomId = gameState?.room?.roomId
 
+  // 순위 및 남은 시간
+  const ranks = gameState?.ranks ?? []
+  const playerId = gameState?.playerId
+  const durationSec = gameState?.game?.durationSec ?? 600
+  const elapsedTime = gameState?.elapsedTime ?? 0
+  const remainingTime = Math.max(0, durationSec - elapsedTime)
+
+  const sortedRanks = [...ranks].sort(
+    (a, b) => Number(a.rank) - Number(b.rank),
+  )
+
   const placeOrder = (side) => {
     if (!validQuantity || isOrdering || !roomId || !socket.connected) {
       return
@@ -116,7 +145,9 @@ function Game({ gameState }) {
       }
 
       setOrderMessage(
-        side === 'buy' ? '매수 주문이 완료되었습니다.' : '매도 주문이 완료되었습니다.',
+        side === 'buy'
+          ? '매수 주문이 완료되었습니다.'
+          : '매도 주문이 완료되었습니다.',
       )
       setOrderMessageType('success')
     })
@@ -197,22 +228,22 @@ function Game({ gameState }) {
   // 서버에서 받은 캔들 데이터 반영
   useEffect(() => {
     const candles = gameState?.candles
-    const elapsedTime = gameState?.candleTime
+    const candleElapsedTime = gameState?.candleTime
 
     if (
       !candles ||
       Object.keys(candles).length === 0 ||
-      !Number.isFinite(elapsedTime)
+      !Number.isFinite(candleElapsedTime)
     ) {
       return
     }
 
     if (chartTimeBaseRef.current === null) {
       chartTimeBaseRef.current =
-        Math.floor(Date.now() / 1000) - elapsedTime
+        Math.floor(Date.now() / 1000) - candleElapsedTime
     }
 
-    const chartTime = chartTimeBaseRef.current + elapsedTime
+    const chartTime = chartTimeBaseRef.current + candleElapsedTime
 
     Object.entries(candles).forEach(([code, candle]) => {
       if (
@@ -229,7 +260,7 @@ function Game({ gameState }) {
 
       if (
         previousTime !== undefined &&
-        elapsedTime < previousTime
+        candleElapsedTime < previousTime
       ) {
         return
       }
@@ -244,7 +275,7 @@ function Game({ gameState }) {
         close: candle.c,
       }
 
-      if (elapsedTime === previousTime) {
+      if (candleElapsedTime === previousTime) {
         if (history.length > 0) {
           history[history.length - 1] = newCandle
         }
@@ -253,7 +284,7 @@ function Game({ gameState }) {
       }
 
       candleHistoryRef.current[code] = history
-      lastCandleTimeRef.current[code] = elapsedTime
+      lastCandleTimeRef.current[code] = candleElapsedTime
 
       if (code === selectedStock && seriesRef.current) {
         seriesRef.current.update(newCandle)
@@ -270,8 +301,156 @@ function Game({ gameState }) {
           <h1>실시간 투자 게임</h1>
         </div>
 
-        <span className="game-timer">LIVE</span>
+        <div
+          className="game-timer"
+          style={{
+            textAlign: 'center',
+            minWidth: '90px',
+          }}
+        >
+          <span
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              marginBottom: '4px',
+            }}
+          >
+            남은 시간
+          </span>
+          <strong
+            style={{
+              fontSize: '24px',
+              fontVariantNumeric: 'tabular-nums',
+              color: remainingTime <= 60 ? '#dc2626' : 'inherit',
+            }}
+          >
+            {formatTime(remainingTime)}
+          </strong>
+        </div>
       </header>
+
+      <section
+        className="ranking-section"
+        style={{
+          marginTop: '24px',
+          padding: '24px',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          background: '#ffffff',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+          }}
+        >
+          <h2 style={{ margin: 0 }}>실시간 순위</h2>
+          <span style={{ color: '#64748b', fontSize: '13px' }}>
+            1초마다 갱신
+          </span>
+        </div>
+
+        {sortedRanks.length === 0 ? (
+          <p
+            style={{
+              margin: 0,
+              padding: '24px 0',
+              color: '#94a3b8',
+              textAlign: 'center',
+            }}
+          >
+            순위 데이터 수신 대기 중
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                textAlign: 'left',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    color: '#64748b',
+                    fontSize: '13px',
+                    borderBottom: '1px solid #e2e8f0',
+                  }}
+                >
+                  <th style={{ padding: '12px 8px' }}>순위</th>
+                  <th style={{ padding: '12px 8px' }}>플레이어</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>
+                    수익률
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {sortedRanks.map((rank) => {
+                  const isMe =
+                    playerId != null &&
+                    rank.playerId === playerId
+
+                  const returnPct = Number(rank.returnPct)
+                  const isPositive = returnPct >= 0
+
+                  return (
+                    <tr
+                      key={rank.playerId}
+                      style={{
+                        background: isMe ? '#eff6ff' : '#ffffff',
+                        borderBottom: '1px solid #f1f5f9',
+                        fontWeight: isMe ? 700 : 400,
+                      }}
+                    >
+                      <td style={{ padding: '14px 8px' }}>
+                        {rank.rank}위
+                      </td>
+
+                      <td style={{ padding: '14px 8px' }}>
+                        {rank.nickname}
+                        {isMe && (
+                          <span
+                            style={{
+                              marginLeft: '8px',
+                              padding: '3px 7px',
+                              borderRadius: '5px',
+                              background: '#dbeafe',
+                              color: '#1d4ed8',
+                              fontSize: '12px',
+                            }}
+                          >
+                            나
+                          </span>
+                        )}
+                      </td>
+
+                      <td
+                        style={{
+                          padding: '14px 8px',
+                          textAlign: 'right',
+                          color: Number.isFinite(returnPct)
+                            ? isPositive
+                              ? '#dc2626'
+                              : '#2563eb'
+                            : '#64748b',
+                        }}
+                      >
+                        {formatReturn(rank.returnPct)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section className="stock-section">
         <h2>종목 선택</h2>
@@ -394,7 +573,9 @@ function Game({ gameState }) {
             <p style={{ color: '#64748b', marginBottom: '6px' }}>
               보유 수량
             </p>
-            <strong>{Number(holdingQuantity).toLocaleString('ko-KR')}주</strong>
+            <strong>
+              {Number(holdingQuantity).toLocaleString('ko-KR')}주
+            </strong>
           </div>
         </div>
 
