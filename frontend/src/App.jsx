@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Routes,
@@ -20,6 +19,7 @@ import './App.css'
 
 function AppContent() {
   const {
+    connectionStatus,
     gameState,
     createRoom,
     joinRoom,
@@ -34,8 +34,24 @@ function AppContent() {
     }
   }, [gameState.result, navigate])
 
+  const statusText = {
+    mock: 'Mock 서버 연결',
+    connected: '서버 연결됨',
+    disconnected: '서버 연결 끊김',
+  }
+
+  // 게임 화면에서는 가리고, 연결이 끊기면 어느 화면에서든 표시
+  const showStatus =
+    location.pathname !== '/game' || connectionStatus === 'disconnected'
+
   return (
     <div>
+      {showStatus && (
+        <div className={`connection-status ${connectionStatus}`}>
+          {statusText[connectionStatus]}
+        </div>
+      )}
+
       <Routes>
         <Route
           path="/"
