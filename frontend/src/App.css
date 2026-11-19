@@ -17,23 +17,24 @@ h1 {
 
 .connection-status {
   position: fixed;
-  top: 12px;
-  right: 12px;
+  top: 20px;
+  right: 24px;
   z-index: 1000;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
+  border: 1px solid;
 }
 
-/* 서버 연결 성공 */
 .connection-status.connected {
-  background-color: #e5f5e9;
-  color: #217a3c;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
-/* 서버 연결 끊김 */
 .connection-status.disconnected {
-  background-color: #fde8e8;
-  color: #c62828;
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
 }

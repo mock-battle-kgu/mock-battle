@@ -20,6 +20,13 @@ class MarketRoom {
     this.onTick = onTick;
     this.onEnd = onEnd;
 
+    // 대결 모드만 가격 모델 사용 (연습 모드 재생은 E단계)
+    this.model =
+      this.mode === "battle"
+        ? new PriceModel({ codes: this.stocks, seed: this.seed })
+        : null;
+    this.prices = this.model ? this.model.snapshot() : {};
+
     this.t = 0;
     this.timer = null;
 

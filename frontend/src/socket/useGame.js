@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { socket, connectSocket, disconnectSocket } from './socket'
 import { startMockServer } from '../mock/mockServer'
@@ -59,7 +60,7 @@ export const useGame = () => {
       const emit = (event, data) => {
         console.log(`[Mock] ${event}`, data)
         handlers[event]?.(data)
-    }
+      }
 
       const stopMockServer = startMockServer(emit)
 
@@ -93,8 +94,41 @@ export const useGame = () => {
     }
   }, [isMock])
 
+  const emitWithAck = (event, payload) =>
+    new Promise((resolve) => {
+      if (!socket.connected) {
+        resolve({
+          ok: false,
+          code: 'SERVER_DISCONNECTED',
+          message: '서버에 연결되어 있지 않습니다.',
+        })
+        return
+      }
+
+      socket.timeout(5000).emit(event, payload, (error, response) => {
+        if (error) {
+          resolve({
+            ok: false,
+            code: 'REQUEST_TIMEOUT',
+            message: '서버 응답 시간이 초과되었습니다.',
+          })
+          return
+        }
+
+        resolve(response)
+      })
+    })
+
+  const createRoom = ({ nickname, mode }) =>
+    emitWithAck('room:create', { nickname, mode })
+
+  const joinRoom = ({ nickname, roomId }) =>
+    emitWithAck('room:join', { nickname, roomId })
+
   return {
     connectionStatus,
     gameState,
+    createRoom,
+    joinRoom,
   }
 }
