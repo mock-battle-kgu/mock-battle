@@ -1,0 +1,22 @@
+services:
+  game-server:
+    environment:
+      GAME_DURATION_SEC: 30
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:test_rabbitmq_password@rabbitmq:5672
+
+  api-server:
+    environment:
+      DB_PASSWORD: test_mysql_password
+
+  market-engine:
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:test_rabbitmq_password@rabbitmq:5672
+
+  db:
+    environment:
+      MYSQL_PASSWORD: test_mysql_password
+      MYSQL_ROOT_PASSWORD: test_root_password
+
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_PASS: test_rabbitmq_password
