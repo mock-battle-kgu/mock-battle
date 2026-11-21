@@ -336,3 +336,261 @@
     width: 100%;
   }
 }
+
+.result-section {
+  margin-bottom: 24px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.result-table-wrap {
+  overflow-x: auto;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.result-table th,
+.result-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.result-table th {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.result-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.result-table .my-result-row {
+  background: #eff6ff;
+}
+
+.result-table .my-result-row td {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.result-me-badge {
+  margin-left: 8px;
+  padding: 3px 7px;
+  border-radius: 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+}
+
+.result-positive {
+  color: #dc2626 !important;
+}
+
+.result-negative {
+  color: #2563eb !important;
+}
+
+.result-rumor-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-rumor-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+.result-rumor-headline {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.result-secondary-button {
+  background: #475569;
+}
+
+.result-secondary-button:hover {
+  background: #334155;
+}
+
+@media (max-width: 768px) {
+  .result-section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-rumor-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* 결과 요약: 순위, 수익률, 총자산을 밝은 카드로 나란히 표시 */
+.result-summary {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.result-summary-heading {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.result-rank {
+  min-height: 100%;
+  margin-bottom: 0;
+  padding: 18px 20px;
+  border: 1px solid #ecd28e;
+  background: linear-gradient(135deg, #fff8e5, #ffffff);
+}
+
+.result-rank strong {
+  color: #95600a;
+}
+
+.result-stats {
+  display: contents;
+}
+
+.result-stat-card {
+  min-height: 100%;
+  padding: 18px 20px;
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+
+.result-stat-label {
+  font-size: 12px;
+}
+
+.result-return,
+.result-asset {
+  font-size: clamp(21px, 3vw, 27px);
+}
+
+/* 밝은 순위표 */
+.result-section {
+  margin-bottom: 18px;
+  padding: 20px;
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+
+.result-table-wrap {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(24, 46, 85, 0.06);
+}
+
+.result-table thead {
+  background: #eff4fb;
+}
+
+.result-table th {
+  padding: 13px 15px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.result-table td {
+  padding: 15px;
+}
+
+.result-table tbody tr:nth-child(even):not(.my-result-row) {
+  background: #f7f9fc;
+}
+
+.result-table tbody tr:first-child:not(.my-result-row) {
+  background: #fff8e5;
+}
+
+.result-table tbody tr:first-child.my-result-row {
+  background: linear-gradient(90deg, #fff5d2, #edf4ff);
+  box-shadow: inset 4px 0 #e4a817;
+}
+
+.result-table tbody tr:first-child td {
+  font-weight: 700;
+}
+
+.result-table tbody tr:first-child td:first-child {
+  color: #95600a;
+}
+
+.result-table tbody tr:first-child td:first-child::before {
+  content: '🥇 ';
+}
+
+.result-table tbody tr:nth-child(2) td:first-child::before {
+  content: '🥈 ';
+}
+
+.result-table tbody tr:nth-child(3) td:first-child::before {
+  content: '🥉 ';
+}
+
+.result-table .my-result-row {
+  background: #eaf2ff;
+  box-shadow: inset 4px 0 #3478e5;
+}
+
+.result-table .my-result-row td {
+  color: #174ea6;
+}
+
+.result-me-badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #d7e7ff;
+  color: #174ea6;
+  font-weight: 800;
+}
+
+.result-rumor-item {
+  background: #f7f9fc;
+}
+
+@media (max-width: 600px) {
+  .result-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .result-summary-heading,
+  .result-rank {
+    grid-column: 1 / -1;
+  }
+
+  .result-section {
+    padding: 15px;
+  }
+}
