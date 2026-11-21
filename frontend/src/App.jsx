@@ -29,17 +29,17 @@ function AppContent() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (gameState.result) {
-      navigate('/result', { replace: true })
-    }
-  }, [gameState.result, navigate])
+useEffect(() => {
+  if (gameState.game && location.pathname === '/waiting') {
+    navigate('/game', { replace: true })
+  }
+}, [gameState.game, location.pathname, navigate])
 
-    useEffect(() => {
-    if (gameState.game && location.pathname === '/waiting') {
-      navigate('/game', { replace: true })
-    }
-  }, [gameState.game, location.pathname, navigate])
+useEffect(() => {
+  if (gameState.result && location.pathname === '/game') {
+    navigate('/result', { replace: true })
+  }
+}, [gameState.result, location.pathname, navigate])
 
   const statusText = {
     mock: 'Mock 서버 연결',
@@ -96,6 +96,7 @@ function AppContent() {
                 gameState.game?.mode ||
                 gameState.room?.mode
               }
+              news={gameState.news}
             />
           }
         />
