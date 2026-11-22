@@ -23,4 +23,12 @@ module.exports = {
     minPrice: 1000, // 최저 1,000원
     unit: 10, // 10원 단위
   },
+
+  // 대결 모드 뉴스 (가이드 4-2)
+  news: {
+    minGapSec: 40, // 뉴스 간격 최소
+    maxGapSec: 90, // 뉴스 간격 최대
+    spreadTicks: 5, // 효과를 5틱에 나눠 반영
+    quietEndSec: 15, // 끝나기 15초 전부터는 새 뉴스 없음
+  },
 };
