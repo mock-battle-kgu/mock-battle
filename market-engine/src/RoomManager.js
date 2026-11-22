@@ -25,12 +25,13 @@ function validateStart(msg) {
 
 class RoomManager {
   /**
-   * @param {object} options tickMs, logger, onTick(room)
+   * @param {object} options tickMs, logger, onTick(room), onNews(room, news)
    */
-  constructor({ tickMs, logger, onTick }) {
+  constructor({ tickMs, logger, onTick, onNews }) {
     this.tickMs = tickMs;
     this.logger = logger;
     this.onTick = onTick || (() => {});
+    this.onNews = onNews || (() => {});
     this.rooms = new Map();
   }
 
@@ -60,6 +61,7 @@ class RoomManager {
       room = new MarketRoom(msg, {
         tickMs: this.tickMs,
         onTick: (r) => this.onTick(r),
+        onNews: (r, news) => this.onNews(r, news),
         onEnd: (r) => {
           this.rooms.delete(r.roomId);
           this.logger.info({ roomId: r.roomId }, "시간 종료로 방 시장 종료");

@@ -2,13 +2,14 @@
 const PriceModel = require("./model/PriceModel");
 const { randomSeed } = require("./model/random");
 const { Replay, PRACTICE_CODE } = require("./model/Replay");
+const NewsEngine = require("./model/NewsEngine");
 
 class MarketRoom {
   /**
    * @param {object} settings market.control start 메시지 내용 (seed는 테스트용)
-   * @param {object} options tickMs, onTick(room), onEnd(room)
+   * @param {object} options tickMs, onTick(room), onEnd(room), onNews(room, news)
    */
-  constructor(settings, { tickMs, onTick, onEnd }) {
+  constructor(settings, { tickMs, onTick, onEnd, onNews = () => {} }) {
     this.roomId = settings.roomId;
     this.mode = settings.mode;
     this.durationSec = settings.durationSec;
@@ -19,13 +20,7 @@ class MarketRoom {
     this.tickMs = tickMs;
     this.onTick = onTick;
     this.onEnd = onEnd;
-
-    // 대결 모드만 가격 모델 사용 (연습 모드 재생은 E단계)
-    this.model =
-      this.mode === "battle"
-        ? new PriceModel({ codes: this.stocks, seed: this.seed })
-        : null;
-    this.prices = this.model ? this.model.snapshot() : {};
+    this.onNews = onNews;
 
     this.t = 0;
     this.timer = null;
@@ -33,9 +28,12 @@ class MarketRoom {
     // 대결 모드는 가격 모델, 연습 모드는 과거 주가 재생
     // 시나리오 파일이 없으면 여기서 오류가 나고, RoomManager가 방을 만들지 않음
     this.model = null;
+    this.news = null;
     this.replay = null;
     if (this.mode === "battle") {
       this.model = new PriceModel({ codes: this.stocks, seed: this.seed });
+      // 가격과 다른 난수 흐름을 써서, 뉴스가 있어도 기본 가격 움직임은 시드대로 유지
+      this.news = new NewsEngine({ codes: this.stocks, seed: (this.seed ^ 0x9e3779b9) >>> 0 });
     } else if (this.mode === "practice") {
       this.replay = Replay.load(this.scenarioId);
     }
@@ -62,7 +60,16 @@ class MarketRoom {
 
   tick() {
     this.t += 1;
-    this.prices = this.model ? this.model.step() : this.currentPrices();
+    if (this.model) {
+      // 1) 이전에 나온 뉴스의 효과를 이번 가격에 반영
+      const extra = this.news.effectsAt(this.t);
+      this.prices = this.model.step(extra);
+    } else {
+      this.prices = this.currentPrices();
+    }
+    // 2) 새 뉴스는 이번 틱보다 먼저 발행 → 가격에는 다음 틱부터 반영
+    const news = this.news ? this.news.emit(this.t, this.durationSec) : null;
+    if (news) this.onNews(this, news);
     this.onTick(this);
     if (this.t >= this.durationSec) {
       this.stop();
