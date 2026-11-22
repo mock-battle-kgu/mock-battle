@@ -117,4 +117,20 @@ describe("RoomManager", () => {
     manager.handleControl({ type: "start", roomId: "771205", mode: "practice", durationSec: 600, scenarioId: "nope" });
     expect(manager.rooms.size).toBe(0);
   });
+
+  test("market.flow는 해당 방에만 전달됨", () => {
+    const { manager } = createManager();
+    manager.handleControl(battleStart("111111"));
+    manager.handleControl(battleStart("222222"));
+    manager.handleFlow({ roomId: "111111", t: 1, netQty: { GANA: 500 } });
+    jest.advanceTimersByTime(1000);
+    expect(manager.rooms.get("111111").impactPct.GANA).toBe(1);
+    expect(manager.rooms.get("222222").impactPct.GANA).toBe(0);
+  });
+
+  test("없는 방의 flow, 형식이 틀린 flow는 오류 없이 무시", () => {
+    const { manager } = createManager();
+    expect(() => manager.handleFlow({ roomId: "999999", t: 1, netQty: { GANA: 1 } })).not.toThrow();
+    expect(() => manager.handleFlow(null)).not.toThrow();
+  });
 });
