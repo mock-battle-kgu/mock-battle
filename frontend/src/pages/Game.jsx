@@ -51,6 +51,12 @@ function Game({ gameState }) {
   const [isOrdering, setIsOrdering] = useState(false)
   const [orderMessage, setOrderMessage] = useState('')
   const [orderMessageType, setOrderMessageType] = useState('')
+  const [isRumorOpen, setIsRumorOpen] = useState(false)
+  const [rumorStock, setRumorStock] = useState('')
+  const [rumorDirection, setRumorDirection] = useState('up')
+  const [isUsingRumor, setIsUsingRumor] = useState(false)
+  const [rumorMessage, setRumorMessage] = useState('')
+  const [rumorCount, setRumorCount] = useState({ roomId: null, count: null, })
 
   const chartContainerRef = useRef(null)
   const chartRef = useRef(null)
@@ -97,6 +103,15 @@ function Game({ gameState }) {
     Number.isInteger(parsedQuantity) && parsedQuantity > 0
 
   const roomId = gameState?.room?.roomId
+  const latestNews = [...(gameState?.news ?? [])].reverse()
+  const isBattle = gameState?.game?.mode === 'battle'
+  const remainingRumorCards =
+    rumorCount.roomId === roomId && rumorCount.count !== null
+      ? rumorCount.count
+      : gameState?.game?.rumorCards ?? 0
+  const rumorStockCode =
+    stocks.find((stock) => stock.code === rumorStock)?.code ??
+    stocks[0]?.code
 
   // 순위 및 남은 시간
   const ranks = gameState?.ranks ?? []
@@ -109,6 +124,60 @@ function Game({ gameState }) {
     (a, b) => Number(a.rank) - Number(b.rank),
   )
 
+  const useRumorCard = () => {
+    if (
+      !isBattle ||
+      !roomId ||
+      !rumorStockCode ||
+      !socket.connected ||
+      isUsingRumor ||
+      remainingRumorCards <= 0
+    ) {
+      return
+    }
+
+    setIsUsingRumor(true)
+    setRumorMessage('')
+
+    socket.timeout(5000).emit(
+      'rumor:use',
+      {
+        roomId,
+        stock: rumorStockCode,
+        direction: rumorDirection,
+      },
+      (error, response) => {
+        setIsUsingRumor(false)
+
+        if (error) {
+          setRumorMessage('서버 응답 시간이 초과되었습니다.')
+          return
+        }
+
+        if (!response?.ok) {
+          const messages = {
+            NO_RUMOR_CARD: '사용 가능한 루머 카드가 없습니다.',
+            GAME_NOT_PLAYING: '게임 진행 중에만 루머 카드를 사용할 수 있습니다.',
+          }
+
+          setRumorMessage(
+            messages[response?.code] ||
+            response?.message ||
+            '루머 카드 사용에 실패했습니다.',
+          )
+          return
+        }
+
+        setRumorCount({
+          roomId,
+          count:
+            response.rumorCardsLeft ??
+            Math.max(0, remainingRumorCards - 1),
+        })
+        setIsRumorOpen(false)
+      },
+    )
+  }
   const placeOrder = (side) => {
     if (!validQuantity || isOrdering || !roomId || !socket.connected) {
       return
@@ -138,8 +207,8 @@ function Game({ gameState }) {
         const code = response?.code
         setOrderMessage(
           ERROR_MESSAGES[code] ||
-            response?.message ||
-            '주문 처리에 실패했습니다.',
+          response?.message ||
+          '주문 처리에 실패했습니다.',
         )
         setOrderMessageType('error')
         return
@@ -485,9 +554,8 @@ function Game({ gameState }) {
               <button
                 key={stock.code}
                 type="button"
-                className={`stock-tab ${
-                  selectedStock === stock.code ? 'active' : ''
-                }`}
+                className={`stock-tab ${selectedStock === stock.code ? 'active' : ''
+                  }`}
                 onClick={() => {
                   setSelectedStock(stock.code)
                   setOrderMessage('')
@@ -519,6 +587,135 @@ function Game({ gameState }) {
 
         <span className="price-unit">실시간 현재가</span>
       </section>
+      {isBattle && (
+        <section className="rn-panel">
+          <div className="rn-news-heading">
+            <div>
+              <p className="rn-eyebrow">LIVE NEWS</p>
+              <h2>실시간 뉴스</h2>
+            </div>
+
+            <button
+              type="button"
+              className="rn-open-button"
+              disabled={remainingRumorCards <= 0}
+              onClick={() => {
+                setRumorMessage('')
+                setIsRumorOpen(true)
+              }}
+            >
+              루머 카드 {remainingRumorCards}장
+            </button>
+          </div>
+
+          {latestNews.length > 0 ? (
+            <ul className="rn-news-list">
+              {latestNews.map((item) => {
+                const stockName =
+                  stocks.find((stock) => stock.code === item.stock)?.name ||
+                  item.stock
+
+                return (
+                  <li className="rn-news-item" key={item.newsId}>
+                    <div className="rn-news-meta">
+                      <span>{formatTime(item.t)}</span>
+                      <span>{stockName}</span>
+                      <span className="rn-news-tag">속보</span>
+                    </div>
+                    <strong>{item.headline}</strong>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="rn-news-empty">
+              새로운 뉴스가 도착하면 여기에 표시됩니다.
+            </p>
+          )}
+
+          {isRumorOpen && (
+            <div className="rn-backdrop">
+              <section
+                className="rn-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="rn-dialog-title"
+              >
+                <div className="rn-dialog-heading">
+                  <div>
+                    <p className="rn-eyebrow">RUMOR CARD</p>
+                    <h2 id="rn-dialog-title">루머 카드 사용</h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="rn-close-button"
+                    aria-label="루머 카드 창 닫기"
+                    onClick={() => setIsRumorOpen(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <label className="rn-label" htmlFor="rn-stock">
+                  종목 선택
+                </label>
+                <select
+                  id="rn-stock"
+                  className="rn-stock-select"
+                  value={rumorStockCode ?? ''}
+                  onChange={(event) => setRumorStock(event.target.value)}
+                >
+                  {stocks.map((stock) => (
+                    <option key={stock.code} value={stock.code}>
+                      {stock.name} ({stock.code})
+                    </option>
+                  ))}
+                </select>
+
+                <span className="rn-label">뉴스 방향</span>
+                <div className="rn-directions">
+                  <button
+                    type="button"
+                    className={`rn-direction rn-good ${rumorDirection === 'up' ? 'selected' : ''
+                      }`}
+                    aria-pressed={rumorDirection === 'up'}
+                    onClick={() => setRumorDirection('up')}
+                  >
+                    ▲ 호재
+                  </button>
+                  <button
+                    type="button"
+                    className={`rn-direction rn-bad ${rumorDirection === 'down' ? 'selected' : ''
+                      }`}
+                    aria-pressed={rumorDirection === 'down'}
+                    onClick={() => setRumorDirection('down')}
+                  >
+                    ▼ 악재
+                  </button>
+                </div>
+
+                {rumorMessage && (
+                  <p className="rn-error" role="alert">
+                    {rumorMessage}
+                  </p>
+                )}
+
+                <div className="rn-dialog-actions">
+                  <button
+                    type="button"
+                    className="rn-send-button"
+                    disabled={isUsingRumor || remainingRumorCards <= 0}
+                    onClick={useRumorCard}
+                  >
+                    {isUsingRumor ? '전송 중...' : '속보 보내기'}
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="chart-section">
         <div className="section-heading">
