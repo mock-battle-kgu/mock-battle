@@ -522,3 +522,102 @@
     padding: 19px;
   }
 }
+
+.market-flow-section {
+  margin: 20px 0;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.market-flow-heading,
+.market-flow-summary,
+.market-flow-impact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.market-flow-eyebrow {
+  margin: 0 0 6px;
+  color: #718096;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.market-flow-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.market-flow-window {
+  color: #718096;
+  font-size: 12px;
+}
+
+.market-flow-summary {
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.market-flow-buy-label {
+  color: #c24141;
+}
+
+.market-flow-sell-label {
+  color: #2563a8;
+}
+
+.market-flow-bar {
+  display: flex;
+  overflow: hidden;
+  height: 14px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: #e8eef7;
+}
+
+.market-flow-buy-bar {
+  background: #e35d5d;
+  transition: width 250ms ease;
+}
+
+.market-flow-sell-bar {
+  background: #5287d8;
+  transition: width 250ms ease;
+}
+
+.market-flow-impact {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.market-flow-impact strong {
+  color: #475569;
+  font-size: 15px;
+}
+
+.market-flow-impact .impact-up {
+  color: #c24141;
+}
+
+.market-flow-impact .impact-down {
+  color: #2563a8;
+}
+
+.market-flow-empty {
+  margin: 18px 0 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .market-flow-section {
+    padding: 16px;
+  }
+}

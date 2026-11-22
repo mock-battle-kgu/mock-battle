@@ -81,6 +81,22 @@ function Game({ gameState }) {
   const currentPrice =
     gameState?.prices?.[selectedStock] ?? selectedInfo?.price ?? 0
 
+  const marketFlow = gameState?.marketFlow
+  const rawBuyRatio = marketFlow?.buyRatio?.[selectedStock]
+  const buyRatio = Number(rawBuyRatio)
+  const hasMarketFlow =
+    rawBuyRatio != null && Number.isFinite(buyRatio)
+
+  const buyPercent = hasMarketFlow
+    ? Math.round(Math.min(1, Math.max(0, buyRatio)) * 100)
+    : 0
+  const sellPercent = 100 - buyPercent
+
+  const rawImpactPct = marketFlow?.impactPct?.[selectedStock]
+  const impactPct = Number(rawImpactPct)
+  const hasImpactPct =
+    rawImpactPct != null && Number.isFinite(impactPct)
+
   // 기준가: game:start의 가격 → 없으면 처음 받은 시세(t=0 시작가)
   const basePrice =
     selectedInfo?.price ??
@@ -713,6 +729,71 @@ function Game({ gameState }) {
                 </div>
               </section>
             </div>
+          )}
+        </section>
+      )}
+
+      {gameState?.game?.mode === 'battle' && (
+        <section className="market-flow-section">
+          <div className="market-flow-heading">
+            <div>
+              <p className="market-flow-eyebrow">MARKET FLOW</p>
+              <h2>플레이어 시장 영향</h2>
+            </div>
+            <span className="market-flow-window">
+              최근 {marketFlow?.windowSec ?? 10}초
+            </span>
+          </div>
+
+          {hasMarketFlow ? (
+            <>
+              <div className="market-flow-summary">
+                <span className="market-flow-buy-label">
+                  매수 <strong>{buyPercent}%</strong>
+                </span>
+                <span className="market-flow-sell-label">
+                  매도 <strong>{sellPercent}%</strong>
+                </span>
+              </div>
+
+              <div
+                className="market-flow-bar"
+                role="img"
+                aria-label={`매수 ${buyPercent}%, 매도 ${sellPercent}%`}
+              >
+                <span
+                  className="market-flow-buy-bar"
+                  style={{ width: `${buyPercent}%` }}
+                />
+                <span
+                  className="market-flow-sell-bar"
+                  style={{ width: `${sellPercent}%` }}
+                />
+              </div>
+
+              <div className="market-flow-impact">
+                <span>{selectedInfo?.name} 가격 반영</span>
+                <strong
+                  className={
+                    !hasImpactPct
+                      ? ''
+                      : impactPct > 0
+                        ? 'impact-up'
+                        : impactPct < 0
+                          ? 'impact-down'
+                          : ''
+                  }
+                >
+                  {hasImpactPct
+                    ? `${impactPct > 0 ? '+' : ''}${impactPct.toFixed(1)}%`
+                    : '대기 중'}
+                </strong>
+              </div>
+            </>
+          ) : (
+            <p className="market-flow-empty">
+              시장 영향 정보를 기다리는 중입니다.
+            </p>
           )}
         </section>
       )}
