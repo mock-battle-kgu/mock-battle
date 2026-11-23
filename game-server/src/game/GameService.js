@@ -30,6 +30,35 @@ class GameService {
     this.games = new Map(); // roomId → 진행 중인 게임
   }
 
+  // 재접속한 참가자 한 명에게 지금 게임 상태를 한 번에 보낸다 (protocol.md game:resume, v0.3)
+  // 끝난 게임이면(삭제 전 30초) 결과 화면을 다시 볼 수 있게 game:end를 다시 보낸다
+  resume({ roomId, playerId, socketId }) {
+    const game = this.games.get(roomId);
+    if (!game) return false;
+    const to = this.io.to(socketId);
+    if (game.ended) {
+      if (game.endPayload) to.emit('game:end', game.endPayload);
+      return true;
+    }
+    const isBattle = game.mode === 'battle';
+    const stocks = isBattle ? BATTLE_STOCKS : PRACTICE_STOCKS;
+    const portfolio = game.portfolios.get(playerId);
+    to.emit('game:resume', {
+      mode: game.mode,
+      durationSec: this.durationSec,
+      startCash: this.startCash,
+      rumorCards: isBattle ? this.rumorCards : 0, // 남은 장 수는 루머 카드(K단계)에서 채운다
+      stocks: stocks.map(({ code, name }) => ({ code, name })),
+      t: game.t,
+      prices: game.prices,
+      candles: game.candles, // 지금까지 닫힌 캔들 전부 (candle:close 형식의 배열)
+      portfolio: portfolio ? portfolio.snapshot(game.prices) : null,
+      stockInfo: game.fundamentals ?? null, // N단계(호가창) 이후 값이 생김
+      books: Object.fromEntries(Object.entries(game.books ?? {}).map(([code, book]) => [code, book.snapshot()])),
+    });
+    return true;
+  }
+
   startGame(room) {
     const isBattle = room.mode === 'battle';
     const stocks = isBattle ? BATTLE_STOCKS : PRACTICE_STOCKS;
@@ -152,7 +181,8 @@ class GameService {
 
     // 연습 모드는 끝나면 실제 종목·기간 공개. 루머 공개는 K단계에서 채운다
     const reveal = game.mode === 'practice' ? this.revealScenario(game.scenarioId) : null;
-    this.io.to(roomId).emit('game:end', { ranks: game.finalRanks, rumors: [], reveal });
+    game.endPayload = { ranks: game.finalRanks, rumors: [], reveal }; // 재접속하면 다시 보냄
+    this.io.to(roomId).emit('game:end', game.endPayload);
     this.market.publishControl({ type: 'stop', roomId });
     this.logger?.info({ roomId, reason, t: game.t }, 'game ended');
 

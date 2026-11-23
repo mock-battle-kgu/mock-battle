@@ -38,7 +38,7 @@ test('방을 만들면 PIN과 p1을 받고 room:update가 온다', async () => {
   const host = await connect();
   const update = nextUpdate(host);
   const res = await request(host, 'room:create', { nickname: '방장', mode: 'battle' });
-  expect(res).toEqual({ ok: true, roomId: expect.stringMatching(/^\d{6}$/), playerId: 'p1' });
+  expect(res).toEqual({ ok: true, roomId: expect.stringMatching(/^\d{6}$/), playerId: 'p1', token: expect.stringMatching(/^[0-9a-f]{32}$/) });
   expect((await update).players).toEqual([{ playerId: 'p1', nickname: '방장', connected: true }]);
 });
 
@@ -48,7 +48,7 @@ test('입장하면 방 전체가 새 참가자 목록을 받는다', async () =>
   const guest = await connect();
   const hostUpdate = nextUpdate(host);
   const res = await request(guest, 'room:join', { roomId, nickname: '손님' });
-  expect(res).toEqual({ ok: true, playerId: 'p2' });
+  expect(res).toEqual({ ok: true, playerId: 'p2', token: expect.stringMatching(/^[0-9a-f]{32}$/) });
   expect((await hostUpdate).players.map((p) => p.nickname)).toEqual(['방장', '손님']);
 });
 

@@ -4,6 +4,8 @@ const MAX_PLAYERS = 8;
 const MIN_BATTLE_PLAYERS = 2;
 const MODES = ['battle', 'practice'];
 
+const { randomBytes } = require('crypto');
+
 // 방 관련 오류도 공통 GameError를 사용 (RoomError는 기존 이름 유지용)
 const { GameError: RoomError } = require('./errors');
 
@@ -36,7 +38,7 @@ class RoomManager {
       throw new RoomError('INVALID_MODE', 'mode must be battle or practice');
     }
     const roomId = this.generatePin();
-    const player = { playerId: 'p1', nickname: name, socketId, connected: true };
+    const player = { playerId: 'p1', nickname: name, socketId, connected: true, token: RoomManager.newToken() };
     const room = {
       roomId,
       mode,
@@ -60,7 +62,9 @@ class RoomManager {
     if (room.players.some((p) => p.nickname === name)) {
       throw new RoomError('NICKNAME_TAKEN', 'nickname already used in this room');
     }
-    const player = { playerId: `p${room.nextPlayerNo}`, nickname: name, socketId, connected: true };
+    const player = {
+      playerId: `p${room.nextPlayerNo}`, nickname: name, socketId, connected: true, token: RoomManager.newToken(),
+    };
     room.nextPlayerNo += 1;
     room.players.push(player);
     return { room, player };
@@ -105,6 +109,27 @@ class RoomManager {
     const player = room.players.find((p) => p.socketId === socketId);
     player.connected = false;
     return { room, deleted: false };
+  }
+
+  // 재접속 (v0.3): 새로고침 등으로 소켓이 바뀐 참가자를 새 소켓에 다시 묶는다
+  // 입장 때 받은 token이 맞아야 한다 (남의 playerId로 들어오는 것을 막음)
+  // 대기 중에 끊긴 참가자는 이미 목록에서 빠졌으므로 다시 입장해야 한다
+  rejoin({ roomId, playerId, token, socketId }) {
+    const room = this.rooms.get(String(roomId ?? ''));
+    if (!room) throw new RoomError('ROOM_NOT_FOUND', 'room not found');
+    const player = room.players.find((p) => p.playerId === playerId);
+    if (!player || typeof token !== 'string' || player.token !== token) {
+      throw new RoomError('REJOIN_FAILED', 'cannot rejoin this room');
+    }
+    const oldSocketId = player.socketId;
+    player.socketId = socketId;
+    player.connected = true;
+    return { room, player, oldSocketId };
+  }
+
+  // 재접속용 비밀값 (입장 응답으로 본인에게만 전달, room:update에는 넣지 않음)
+  static newToken() {
+    return randomBytes(16).toString('hex');
   }
 
   // 게임 종료: 상태만 ended로 바꾼다 (참가자 목록은 결과 화면을 위해 유지)
