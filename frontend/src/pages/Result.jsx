@@ -17,8 +17,14 @@ const formatAsset = (value) => {
   return `${Number(value).toLocaleString('ko-KR')}원`
 }
 
-function Result({ result, playerId, mode }) {
+function Result({ result, playerId, mode, onHome }) {
   const navigate = useNavigate()
+
+  // 홈으로 갈 때 재접속 정보도 지운다
+  const goHome = () => {
+    onHome?.()
+    navigate('/')
+  }
 
   const myRank = result?.ranks?.find(
     (rank) => rank.playerId === playerId,
@@ -61,7 +67,7 @@ function Result({ result, playerId, mode }) {
           <button
             type="button"
             className="result-home-button"
-            onClick={() => navigate('/')}
+            onClick={goHome}
           >
             홈으로 돌아가기
           </button>
@@ -148,6 +154,18 @@ function Result({ result, playerId, mode }) {
                     <span>분석 기간</span>
                     <strong>{reveal.period || '정보 없음'}</strong>
                   </div>
+
+                  {reveal.fundamentals && (
+                    <div className="result-period">
+                      <span>업종 · 그 당시 지표</span>
+                      <strong>
+                        {reveal.fundamentals.sector || '—'} · EPS{' '}
+                        {Number(reveal.fundamentals.eps).toLocaleString('ko-KR')}원 · BPS{' '}
+                        {Number(reveal.fundamentals.bps).toLocaleString('ko-KR')}원 · 업종 평균 PER{' '}
+                        {reveal.fundamentals.sectorPer}배
+                      </strong>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="result-missing">
@@ -162,7 +180,7 @@ function Result({ result, playerId, mode }) {
             <button
               type="button"
               className="result-home-button"
-              onClick={() => navigate('/')}
+              onClick={goHome}
             >
               홈으로 돌아가기
             </button>

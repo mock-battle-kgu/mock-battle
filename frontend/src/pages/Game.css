@@ -1,175 +1,826 @@
-
-.game-page {
-  width: 100%;
+/* 게임 화면 v0.3: 어두운 증권 앱 스타일. 상승 빨강 · 하락 파랑 (한국 증권 앱 기준) */
+.gm-page {
   min-height: 100vh;
-  padding: 32px;
-  background: #f8fafc;
-  color: #0f172a;
+  padding: 20px;
+  background: #0f1724;
+  color: #f2f4f8;
+  font-family: 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
 }
 
-.game-header {
+.gm-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.game-label {
-  margin: 0 0 8px;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
+.gm-card {
+  background: #1a2233;
+  border: 1px solid #263247;
+  border-radius: 14px;
 }
 
-.game-header h1 {
-  margin: 0;
-  font-size: 28px;
-}
-
-.game-timer {
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.stock-section,
-.price-section,
-.chart-section {
-  margin-bottom: 24px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.stock-section h2,
-.chart-section h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.stock-tabs {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.stock-tab {
+.gm-panel {
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #334155;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.2s, background 0.2s;
 }
 
-.stock-tab:hover {
-  border-color: #94a3b8;
+.gm-pad {
+  padding: 0 16px;
 }
 
-.stock-tab.active {
-  border: 2px solid #2563eb;
-  background: #eff6ff;
+.gm-h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.stock-name {
+.gm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gm-muted {
+  color: #9aa4b2;
+}
+
+.gm-small {
+  font-size: 12px;
+}
+
+.gm-tiny {
+  font-size: 11px;
+  color: #9aa4b2;
+}
+
+.gm-note {
+  margin: 0;
+  font-size: 12px;
+  color: #9aa4b2;
+  line-height: 1.5;
+}
+
+.gm-text {
+  margin: 0;
   font-size: 13px;
-  color: #64748b;
+  color: #c9d1dc;
+  line-height: 1.6;
 }
 
-.stock-tab strong {
+.gm-empty {
+  margin: 0;
+  padding: 18px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #9aa4b2;
+}
+
+.up {
+  color: #ff6b76;
+}
+
+.down {
+  color: #5aa0ff;
+}
+
+.flat {
+  color: #c9d1dc;
+}
+
+/* 상단 바 */
+.gm-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 14px 20px;
+}
+
+.gm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.gm-logo {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.gm-mode-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+}
+
+.gm-mode-badge.battle {
+  background: #d92d3c;
+}
+
+.gm-mode-badge.practice {
+  background: #0f8b8d;
+}
+
+.gm-conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #34d399;
+}
+
+.gm-conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.gm-conn.reconnecting {
+  color: #ffb800;
+}
+
+.gm-conn.disconnected {
+  color: #ff6b76;
+}
+
+.gm-conn.mock {
+  color: #9aa4b2;
+}
+
+.gm-header-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 13px;
+}
+
+.gm-timer {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffb800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.gm-timer.urgent {
+  color: #ff6b76;
+}
+
+.gm-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 1 1 280px;
+  font-size: 13px;
+}
+
+.gm-asset {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-asset span {
   font-size: 15px;
 }
 
-.price-section {
+/* 종목 탭 */
+.gm-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.price-stock-name {
-  color: #64748b;
+.gm-tab {
+  flex: 1 1 140px;
+  min-height: 64px;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #1a2233;
+  border: 1px solid #263247;
+  color: #f2f4f8;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-tab.active {
+  background: #263247;
+  border-color: #ffb800;
+}
+
+.gm-tab-name {
   font-size: 14px;
+  font-weight: 700;
 }
 
-.price-section h2 {
-  margin: 8px 0;
-  font-size: 30px;
+.gm-tab-price {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: #c9d1dc;
+  font-variant-numeric: tabular-nums;
 }
 
-.price-section p {
+/* 3열 배치: 화면이 좁아지면 아래로 쌓인다 */
+.gm-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.gm-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gm-col {
+  flex: 1 1 300px;
+  max-width: 340px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gm-two {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.gm-half {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+/* 차트 */
+.gm-chart-card {
+  padding: 18px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gm-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+
+.gm-stock-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.price-up {
-  color: #ef4444;
+.gm-stock-price {
+  font-size: 28px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
-.price-down {
-  color: #2563eb;
+.gm-stock-change {
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.price-unit {
-  color: #64748b;
-  font-size: 13px;
+.gm-legend {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: #9aa4b2;
+  align-items: center;
 }
 
-.section-heading {
+.gm-legend span {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 6px;
 }
 
-.section-heading span {
-  color: #64748b;
+.gm-legend i {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top: 2px solid;
+}
+
+.gm-legend .ma5 {
+  border-color: #f5a623;
+}
+
+.gm-legend .ma20 {
+  border-color: #a78bfa;
+}
+
+.gm-legend .avg {
+  border-top-style: dashed;
+  border-color: #34d399;
+}
+
+.chart-box {
+  position: relative;
+  width: 100%;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 360px;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa4b2;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* 종목 정보 */
+.gm-val-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.gm-val-badge.low {
+  background: #12302a;
+  color: #6ee7b7;
+}
+
+.gm-val-badge.high {
+  background: #3a2330;
+  color: #ff8a94;
+}
+
+.gm-val-badge.fair {
+  background: #263247;
+  color: #c9d1dc;
+}
+
+.gm-info-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 13px;
 }
 
-.chart-container {
-  width: 100%;
-  min-height: 360px;
+.gm-info-head strong {
+  font-size: 14px;
 }
 
-@media (max-width: 900px) {
-  .stock-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.gm-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
 }
 
-@media (max-width: 600px) {
-  .game-page {
-    padding: 16px;
+.gm-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #141c2b;
+  font-size: 12px;
+}
+
+.gm-metric strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 매수 압력 게이지 */
+.gm-pressure {
+  display: flex;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gm-pressure .buy {
+  background: #d92d3c;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  transition: width 0.4s;
+}
+
+.gm-pressure .sell {
+  background: #1f6fe5;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  transition: width 0.4s;
+}
+
+.gm-pressure.empty {
+  align-items: center;
+  justify-content: center;
+  background: #141c2b;
+  color: #9aa4b2;
+  font-weight: 400;
+}
+
+/* 호가창 */
+.gm-book {
+  padding: 16px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-book-head,
+.gm-book-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.gm-book-head {
+  font-size: 11px;
+  color: #9aa4b2;
+}
+
+.gm-book-head span:first-child {
+  text-align: right;
+}
+
+.gm-book-head span:nth-child(2) {
+  text-align: center;
+}
+
+.gm-book-row {
+  position: relative;
+  align-items: center;
+  height: 30px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-book-row.dim {
+  opacity: 0.45;
+}
+
+.gm-book-bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.gm-book-bar.ask {
+  right: 50%;
+  background: rgba(49, 130, 246, 0.22);
+  max-width: calc(50% - 10px);
+}
+
+.gm-book-bar.bid {
+  left: 50%;
+  background: rgba(240, 68, 82, 0.22);
+  max-width: calc(50% - 10px);
+}
+
+.gm-book-row span {
+  position: relative;
+}
+
+.gm-book-row .qty {
+  text-align: right;
+  color: #c9d1dc;
+}
+
+.gm-book-row .qty.left {
+  text-align: left;
+}
+
+.gm-book-row .price {
+  text-align: center;
+  font-weight: 700;
+}
+
+.gm-book-row .price.ask {
+  color: #5aa0ff;
+}
+
+.gm-book-row .price.bid {
+  color: #ff6b76;
+}
+
+.gm-book-now {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 10px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ffb800;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-book-now strong {
+  font-size: 16px;
+}
+
+/* 주문창 */
+.gm-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-qty {
+  display: flex;
+  gap: 8px;
+}
+
+.gm-qty button {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #263247;
+  background: #263247;
+  color: #f2f4f8;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.gm-qty input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #263247;
+  background: #0f1724;
+  color: #f2f4f8;
+  text-align: center;
+  font-size: 16px;
+}
+
+.gm-order-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.gm-order-buttons button {
+  flex: 1 1 0;
+  height: 48px;
+  border-radius: 10px;
+  border: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gm-order-buttons .buy {
+  background: #d92d3c;
+}
+
+.gm-order-buttons .sell {
+  background: #1f6fe5;
+}
+
+.gm-order-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gm-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-toast.success {
+  background: #12271f;
+  border: 1px solid #2f7a5b;
+}
+
+.gm-toast.success strong {
+  color: #6ee7b7;
+}
+
+.gm-toast.error {
+  background: #2a1619;
+  border: 1px solid #7a2f3a;
+}
+
+.gm-toast.error strong {
+  color: #ff8a94;
+}
+
+.gm-toast span {
+  color: #c9d1dc;
+}
+
+/* 순위 */
+.gm-ranks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-ranks li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-ranks li.me {
+  background: #263247;
+  border-color: #ffb800;
+  font-weight: 700;
+}
+
+.gm-ranks .no {
+  width: 16px;
+  font-weight: 700;
+  color: #9aa4b2;
+}
+
+.gm-ranks .no.first {
+  color: #ffb800;
+}
+
+.gm-ranks .name {
+  flex: 1 1 auto;
+}
+
+/* 뉴스 */
+.gm-hint-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffb800;
+  color: #1a1300;
+}
+
+.gm-news {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #141c2b;
+  border: 1px solid #263247;
+  font-size: 14px;
+}
+
+.gm-news.hot {
+  border-color: #ffb800;
+}
+
+.gm-news-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gm-news-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #d92d3c;
+}
+
+.gm-rumor {
+  height: 48px;
+  border-radius: 10px;
+  border: 1px dashed #ffb800;
+  background: transparent;
+  color: #ffb800;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gm-rumor:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 연습 모드 */
+.gm-trades {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-trades li {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #141c2b;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-trades .right {
+  text-align: right;
+}
+
+.gm-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #263247;
+  overflow: hidden;
+}
+
+.gm-progress div {
+  height: 100%;
+  background: #ffb800;
+  transition: width 0.4s;
+}
+
+/* 게임이 없을 때 (재접속 중·실패) */
+.gm-waiting {
+  max-width: 480px;
+  margin: 120px auto 0;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.gm-home-btn {
+  align-self: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: 0;
+  background: #ffb800;
+  color: #1a1300;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .gm-page {
+    padding: 12px;
   }
 
-  .game-header h1 {
-    font-size: 22px;
+  .gm-col {
+    max-width: none;
   }
 
-  .stock-section,
-  .price-section,
-  .chart-section {
-    padding: 16px;
-  }
-
-  .stock-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .price-section h2 {
-    font-size: 24px;
+  .gm-header-right {
+    align-items: flex-start;
   }
 }
