@@ -1,9 +1,16 @@
 const express = require('express');
 const { pool } = require('../db');
+const { validateResult } = require('../validate');
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
+  const validationError = validateResult(req.body);
+
+  if (validationError) {
+    return res.status(400).json(validationError);
+  }
+  
   const {
     roomId,
     mode,
