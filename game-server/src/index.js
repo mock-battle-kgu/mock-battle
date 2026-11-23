@@ -2,6 +2,7 @@ const config = require('./config');
 const logger = require('./logger');
 const { createApp } = require('./app');
 const { MarketClient } = require('./mq/marketClient');
+const { ResultClient } = require('./api/resultClient');
 const { RoomManager } = require('./game/RoomManager');
 const { GameService } = require('./game/GameService');
 const { ScenarioCatalog } = require('./game/ScenarioCatalog');
@@ -15,6 +16,12 @@ async function main() {
   await market.connect();
 
   const rooms = new RoomManager();
+  const results = new ResultClient({
+    apiUrl: config.apiUrl,
+    logger,
+    retries: config.resultRetries,
+    retryDelayMs: config.resultRetryDelayMs,
+  });
   const scenarios = ScenarioCatalog.load(config.scenarioDir, logger);
   const games = new GameService({
     io,
@@ -30,6 +37,7 @@ async function main() {
     backupGraceSec: config.backupGraceSec,
     endedRoomTtlMs: config.endedRoomTtlMs,
     broadcastRoom: (room) => broadcastRoom(io, room),
+    results,
   });
 
   market.onTick((tick) => games.handleTick(tick));

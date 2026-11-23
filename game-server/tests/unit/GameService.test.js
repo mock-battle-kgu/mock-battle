@@ -1,7 +1,7 @@
 const { GameService } = require('../../src/game/GameService');
 const { RoomManager } = require('../../src/game/RoomManager');
 
-function setup({ mode = 'battle', durationSec = 10, random = () => 0 } = {}) {
+function setup({ mode = 'battle', durationSec = 10, random = () => 0, results = null } = {}) {
   const sent = []; // 화면으로 보낸 것
   const controls = []; // 시세 엔진으로 보낸 것
   const roomUpdates = [];
@@ -20,6 +20,8 @@ function setup({ mode = 'battle', durationSec = 10, random = () => 0 } = {}) {
     backupGraceSec: 5, endedRoomTtlMs: 30_000,
     broadcastRoom: (r) => roomUpdates.push(RoomManager.publicState(r)),
     random,
+    results,
+    now: () => new Date('2026-11-23T05:00:00.000Z'),
   });
   const events = (name) => sent.filter((s) => s.event === name);
   return { games, room, rooms, sent, controls, roomUpdates, events };
@@ -313,5 +315,44 @@ describe('연습 모드 정체 공개', () => {
     games.startGame(room);
     games.handleTick({ roomId: room.roomId, t: 1, prices: { GANA: 10_000 } });
     expect(events('game:end')[0].data.reveal).toBeNull();
+  });
+});
+
+describe('결과 저장', () => {
+  test('게임이 끝나면 최종 순위를 API 서버 형식으로 한 번 저장한다', () => {
+    const results = { save: jest.fn().mockResolvedValue(42) };
+    const { games, room } = setup({ results });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 1, prices: { GANA: 46000 } });
+    games.placeOrder({ roomId: room.roomId, playerId: 'p2', stock: 'GANA', side: 'buy', qty: 10 });
+    games.handleTick({ roomId: room.roomId, t: 10, prices: { GANA: 50000 } });
+    games.endGame(room.roomId, 'again');
+
+    expect(results.save).toHaveBeenCalledTimes(1);
+    expect(results.save).toHaveBeenCalledWith({
+      roomId: room.roomId,
+      mode: 'battle',
+      playedAt: '2026-11-23T05:00:00.000Z',
+      durationSec: 10,
+      players: [
+        { nickname: '손님', rank: 1, returnPct: 0.4, totalAsset: 10_040_000, rumorsUsed: 0 },
+        { nickname: '방장', rank: 2, returnPct: 0, totalAsset: 10_000_000, rumorsUsed: 0 },
+      ],
+    });
+  });
+
+  test('저장이 실패해도 게임 종료는 정상으로 끝난다', () => {
+    const results = { save: jest.fn().mockRejectedValue(new Error('down')) };
+    const { games, room, events } = setup({ results });
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 10, prices: { GANA: 1 } });
+    expect(events('game:end')).toHaveLength(1);
+  });
+
+  test('results가 없으면 저장하지 않는다 (기존 동작)', () => {
+    const { games, room, events } = setup();
+    games.startGame(room);
+    games.handleTick({ roomId: room.roomId, t: 10, prices: { GANA: 1 } });
+    expect(events('game:end')).toHaveLength(1);
   });
 });

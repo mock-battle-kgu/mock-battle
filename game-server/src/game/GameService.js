@@ -22,10 +22,13 @@ class GameService {
     candleTicks = 5,
     revealScenario = () => null,
     random = Math.random,
+    results = null, // ResultClient: 게임 결과 저장 (없으면 저장하지 않음)
+    now = () => new Date(),
   }) {
     Object.assign(this, {
       io, market, rooms, logger, durationSec, startCash, rumorCards,
       scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, candleTicks, revealScenario, random,
+      results, now,
     });
     this.games = new Map(); // roomId → 진행 중인 게임
   }
@@ -36,6 +39,7 @@ class GameService {
     const game = {
       roomId: room.roomId,
       mode: room.mode,
+      startedAt: this.now(), // 결과 저장의 playedAt
       t: 0,
       prices: {},
       ended: false,
@@ -144,7 +148,7 @@ class GameService {
     // 5초를 다 못 채운 마지막 캔들도 닫아서 보낸다
     this.emitCandle(game, game.candleBuilder.flush(game.t));
 
-    // 마지막 시세로 최종 순위 (J단계에서 API 서버에 저장)
+    // 마지막 시세로 최종 순위 (saveResult로 API 서버에 저장)
     game.finalRanks = rankPlayers(this.players(game), game.portfolios, game.prices);
 
     const room = this.rooms.endRoom(roomId);
@@ -155,11 +159,32 @@ class GameService {
     this.io.to(roomId).emit('game:end', { ranks: game.finalRanks, rumors: [], reveal });
     this.market.publishControl({ type: 'stop', roomId });
     this.logger?.info({ roomId, reason, t: game.t }, 'game ended');
+    this.saveResult(game);
 
     setTimeout(() => {
       this.games.delete(roomId);
       this.rooms.remove(roomId);
     }, this.endedRoomTtlMs);
+  }
+
+  // 최종 순위를 API 서버에 저장 (기다리지 않음, 실패해도 게임에는 영향 없음)
+  saveResult(game) {
+    if (!this.results) return;
+    this.results
+      .save({
+        roomId: game.roomId,
+        mode: game.mode,
+        playedAt: game.startedAt.toISOString(),
+        durationSec: this.durationSec,
+        players: game.finalRanks.map(({ rank, playerId, nickname, returnPct, totalAsset }) => ({
+          nickname,
+          rank,
+          returnPct,
+          totalAsset,
+          rumorsUsed: game.rumorsUsed?.get(playerId) ?? 0, // 루머 카드는 K단계에서 채운다
+        })),
+      })
+      .catch(() => {}); // save는 오류를 던지지 않지만 혹시 몰라 막아 둔다
   }
 
   get(roomId) {
