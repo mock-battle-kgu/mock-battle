@@ -1,8 +1,8 @@
 {
-  "GANA": { "name": "가나전자", "startPrice": 46000, "sigma": 0.003 },
-  "DARA": { "name": "다라항공", "startPrice": 19000, "sigma": 0.004 },
-  "MABA": { "name": "마바게임즈", "startPrice": 32000, "sigma": 0.006 },
-  "SAAH": { "name": "사아바이오", "startPrice": 54000, "sigma": 0.006 },
-  "JACHA": { "name": "자차푸드", "startPrice": 27000, "sigma": 0.002 },
-  "KATA": { "name": "카타에너지", "startPrice": 15000, "sigma": 0.004 }
+  "GANA": { "name": "가나전자", "startPrice": 46000, "sigma": 0.003, "sector": "반도체", "eps": 4000, "bps": 30000, "sectorPer": 13 },
+  "DARA": { "name": "다라항공", "startPrice": 19000, "sigma": 0.004, "sector": "항공", "eps": 1500, "bps": 21000, "sectorPer": 11 },
+  "MABA": { "name": "마바게임즈", "startPrice": 32000, "sigma": 0.006, "sector": "게임", "eps": 1600, "bps": 12000, "sectorPer": 20 },
+  "SAAH": { "name": "사아바이오", "startPrice": 54000, "sigma": 0.006, "sector": "바이오", "eps": 900, "bps": 15000, "sectorPer": 50 },
+  "JACHA": { "name": "자차푸드", "startPrice": 27000, "sigma": 0.002, "sector": "식품", "eps": 2500, "bps": 24000, "sectorPer": 12 },
+  "KATA": { "name": "카타에너지", "startPrice": 15000, "sigma": 0.004, "sector": "에너지", "eps": 1500, "bps": 16000, "sectorPer": 9 }
 }
