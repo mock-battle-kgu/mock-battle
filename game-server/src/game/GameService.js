@@ -125,6 +125,7 @@ class GameService {
     // 체결되면 1초를 기다리지 않고 바로 내 계좌 상태를 보낸다
     const player = this.players(game).find((p) => p.playerId === playerId);
     if (player) this.emitPortfolio(game, player);
+    game.candleBuilder.addVolume(stock, qty); // 체결 수량은 다음 틱 캔들 거래량에 더한다
     this.logger?.debug({ roomId, playerId, stock, side, qty, price }, 'order filled');
     return result;
   }
@@ -134,6 +135,13 @@ class GameService {
     if (Array.isArray(closed)) return closed.forEach((c) => this.emitCandle(game, c));
     game.candles.push(closed);
     this.io.to(game.roomId).emit('candle:close', closed);
+  }
+
+  // market.tick의 시장 거래량을 이번 틱 캔들에 넣는다 (handleTick보다 먼저 호출, v0.3)
+  handleVolumes({ roomId, volumes }) {
+    const game = this.games.get(roomId);
+    if (!game || game.ended || !volumes) return;
+    for (const [code, qty] of Object.entries(volumes)) game.candleBuilder.addVolume(code, qty);
   }
 
   endGame(roomId, reason) {

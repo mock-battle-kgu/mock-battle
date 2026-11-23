@@ -31,6 +31,7 @@ async function main() {
     endedRoomTtlMs: config.endedRoomTtlMs,
     broadcastRoom: (room) => broadcastRoom(io, room),
   });
+  market.onTick((tick) => games.handleVolumes(tick)); // 거래량을 먼저 넣고 아래 handleTick에서 캔들로 묶는다
 
   market.onTick((tick) => games.handleTick(tick));
   registerRoomHandlers({ io, rooms, logger, onGameStart: (room) => games.startGame(room) });
