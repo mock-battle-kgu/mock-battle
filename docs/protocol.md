@@ -1,4 +1,4 @@
-# 통신 메시지 규약 (v0.2)
+# 통신 메시지 규약 (v0.3)
 
 모든 컨테이너가 주고받는 메시지의 이름과 형식을 정의합니다.
 이 문서를 바꿀 때는 반드시 PR로 수정하고, 영향을 받는 담당자가 리뷰합니다.
@@ -82,10 +82,19 @@
 // 요청
 { "roomId": "482913", "stock": "GANA", "side": "buy", "qty": 50 }
 // 응답
-{ "ok": true, "price": 60400, "qty": 50, "cash": 6980000 }
+{
+  "ok": true,
+  "price": 60540,
+  "qty": 50,
+  "requestedQty": 50,
+  "fills": [{ "price": 60500, "qty": 30 }, { "price": 60600, "qty": 20 }],
+  "cash": 5973000
+}
 ```
-실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `INVALID_STOCK`, `INVALID_SIDE`, `GAME_NOT_PLAYING`
-- 체결가는 **서버가 가진 최신 시세**입니다. 화면이 보낸 가격은 받지 않습니다.
+실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `INVALID_STOCK`, `INVALID_SIDE`, `GAME_NOT_PLAYING`, `NO_LIQUIDITY`
+- **v0.3부터 호가창 체결**입니다. 매수는 매도 1호가부터, 매도는 매수 1호가부터 차례로 체결합니다. 화면이 보낸 가격은 받지 않습니다.
+- `price`는 **평균 체결가**(원 단위 반올림), `qty`는 실제 체결 수량, `requestedQty`는 요청 수량, `fills`는 호가별 체결 내역입니다.
+- 호가 잔량이 모자라면 있는 만큼만 체결합니다(`qty` < `requestedQty`). 잔량이 하나도 없으면 `NO_LIQUIDITY`.
 - 방과 참가자는 소켓 연결로 판단합니다. 요청의 `roomId`는 생략해도 되고, 다른 사람의 `playerId`를 넣어도 무시됩니다.
 - 응답의 `cash`는 체결 후 내 현금입니다. 보유 주식과 수익률은 `portfolio:update`로 받습니다.
 
@@ -185,6 +194,29 @@
 ```
 화면의 "매수 64% / 매도 36%" 막대와 "가격 +1.8% 반영" 표시에 사용합니다.
 
+#### `stock:info` 종목 지표 (방 전체, 게임 시작 시 1번) — v0.3
+```json
+{ "stocks": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } } }
+```
+- t=0 `price:tick`과 함께 옵니다. **대결 모드만** 보냅니다 (연습 모드는 실제 종목을 숨기므로 없음).
+- PER(현재가 ÷ EPS)과 PBR(현재가 ÷ BPS)은 화면이 매 틱 계산합니다. EPS는 판마다 달라집니다.
+
+#### `orderbook:update` 호가창 (방 전체, 1초마다 + 체결 시) — v0.3
+```json
+{
+  "t": 125,
+  "books": {
+    "GANA": {
+      "asks": [{ "price": 60500, "qty": 49 }, { "price": 60600, "qty": 74 }],
+      "bids": [{ "price": 60300, "qty": 49 }, { "price": 60200, "qty": 74 }]
+    }
+  }
+}
+```
+- `asks`(매도호가)는 싼 것부터, `bids`(매수호가)는 비싼 것부터 5단계씩. 잔량은 방 전체가 함께 씁니다.
+- 1초마다 모든 종목을 보내고, 체결되면 그 종목만 바로 보냅니다. 화면은 받은 종목만 덮어씁니다.
+- 호가 단위: 2만 원 미만 10원, 5만 원 미만 50원, 그 이상 100원. 잔량은 1초마다 다시 채웁니다.
+
 #### `game:end` 게임 종료 (방 전체)
 게임 종료 직전 `room:update`(status `ended`)가 함께 옵니다. 끝난 방은 30초 뒤 서버에서 삭제됩니다.
 ```json
@@ -237,6 +269,12 @@ exchange 이름: `market` (topic 타입, **durable: true**). 게임 서버와 �
 ```
 게임 서버는 이 값을 받아 `price:tick`, `market:flow`로 화면에 전달합니다.
 
+대결 모드의 **t=0 메시지에만** 종목 지표가 함께 옵니다 (v0.3). 게임 서버는 이를 `stock:info`로 전달합니다.
+```json
+{ "roomId": "482913", "t": 0, "prices": { "GANA": 46000 }, "impactPct": { "GANA": 0 },
+  "fundamentals": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } } }
+```
+
 #### `market.news` 진짜 뉴스
 ```json
 { "roomId": "482913", "t": 210, "stock": "DARA", "headline": "다라항공, 유가 급등에 실적 경고", "effectPct": -4.0 }
@@ -270,6 +308,13 @@ exchange 이름: `market` (topic 타입, **durable: true**). 게임 서버와 �
 ```
 랭킹 방식(명예의 전당 / 회원 누적 랭킹)이 확정되면 이 부분을 수정합니다.
 
+#### `GET /api/stocks` 종목 정보 — v0.3
+```json
+// 응답 200
+{ "stocks": [ { "code": "GANA", "name": "가나전자", "sector": "반도체", "description": "메모리 반도체를 만드는 국내 대표 전자 기업" } ] }
+```
+화면의 종목 정보 카드에서 씁니다. 판마다 바뀌는 숫자(EPS 등)는 `stock:info`로 받습니다.
+
 #### `GET /api/health` 상태 확인
 ```json
 // 응답 200
@@ -293,6 +338,7 @@ Docker 헬스체크와 GitHub Actions 통합 테스트에서 사용합니다.
 | `INVALID_QTY` | 수량이 1 미만이거나 정수가 아님 |
 | `INVALID_STOCK` | 이 게임에 없는 종목 코드 |
 | `INVALID_SIDE` | side가 buy·sell이 아님 |
+| `NO_LIQUIDITY` | 호가 잔량이 없음 (1초 뒤 다시 채워짐) |
 | `NO_RUMOR_CARD` | 루머 카드 소진 |
 | `INVALID_NICKNAME` | 닉네임이 비었거나 10자 초과 |
 | `INVALID_MODE` | mode가 battle·practice가 아님 |
