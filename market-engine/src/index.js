@@ -46,12 +46,15 @@ async function main() {
       const codes = Object.keys(room.prices);
       if (codes.length === 0) return;
       // impactPct: 최근 10초 플레이어 순매수 영향 (연습 모드는 항상 0)
-      publish("market.tick", {
+      const tick = {
         roomId: room.roomId,
         t: room.t,
         prices: room.prices,
         impactPct: room.impactPct,
-      });
+      };
+      // t=0에만 종목 지표 포함 (가이드 4-5, 적정가 자체는 보내지 않음)
+      if (room.t === 0 && room.fundamentals) tick.fundamentals = room.fundamentals;
+      publish("market.tick", tick);
       logger.debug({ roomId: room.roomId, t: room.t, prices: room.prices }, "tick 발행");
     },
     // protocol.md 3장 market.news (effectPct는 시세 엔진 내부용, 화면에는 headline만)

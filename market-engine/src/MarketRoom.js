@@ -1,6 +1,7 @@
 // 방 하나의 시장: 1초마다 가격을 만들고(대결) 또는 재생하고(연습), 시간이 다 되면 스스로 멈춤
 const PriceModel = require("./model/PriceModel");
-const { randomSeed } = require("./model/random");
+const { createRandom, randomSeed } = require("./model/random");
+const { makeFundamentals, scaleScenarioFundamentals } = require("./model/Fundamentals");
 const { Replay, PRACTICE_CODE } = require("./model/Replay");
 const NewsEngine = require("./model/NewsEngine");
 const FlowImpact = require("./model/FlowImpact");
@@ -32,13 +33,22 @@ class MarketRoom {
     this.news = null;
     this.flow = null;
     this.replay = null;
+    this.fundamentals = null;
     if (this.mode === "battle") {
-      this.model = new PriceModel({ codes: this.stocks, seed: this.seed });
+      // 지표용 난수는 가격용과 따로 써서, 같은 시드의 기본 가격 흐름이 바뀌지 않게 함
+      this.fundamentals = makeFundamentals(this.stocks, createRandom(this.seed + 1));
+      this.model = new PriceModel({
+        codes: this.stocks,
+        seed: this.seed,
+        fundamentals: this.fundamentals,
+      });
       // 가격과 다른 난수 흐름을 써서, 뉴스가 있어도 기본 가격 움직임은 시드대로 유지
       this.news = new NewsEngine({ codes: this.stocks, seed: (this.seed ^ 0x9e3779b9) >>> 0 });
       this.flow = new FlowImpact({ codes: this.stocks });
     } else if (this.mode === "practice") {
       this.replay = Replay.load(this.scenarioId);
+      // 실제 지표를 가격과 같은 비율로 줄여서 보냄 (적정가 회귀는 없음)
+      this.fundamentals = scaleScenarioFundamentals(this.replay.scenario, PRACTICE_CODE);
     }
     this.prices = this.currentPrices();
     this.impactPct = this.zeroImpact();

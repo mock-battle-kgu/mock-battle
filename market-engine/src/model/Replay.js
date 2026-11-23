@@ -40,10 +40,15 @@ function dayTicks({ open, high, low, close }) {
 }
 
 class Replay {
-  constructor(days) {
+  /**
+   * @param {Array} days 거래일 목록
+   * @param {object|null} scenario index.json의 시나리오 정보 (firstClose, fundamentals 등)
+   */
+  constructor(days, scenario = null) {
     if (!days.length) throw new Error("재생할 거래일이 없음");
     this.days = days;
     this.ticks = days.flatMap(dayTicks);
+    this.scenario = scenario;
   }
 
   // index.json에서 scenarioId를 찾아 CSV를 불러옴
@@ -52,7 +57,7 @@ class Replay {
     const scenario = index.scenarios.find((s) => s.id === scenarioId);
     if (!scenario) throw new Error(`없는 시나리오: ${scenarioId}`);
     const days = parseCsv(fs.readFileSync(path.join(dir, scenario.file), "utf8"));
-    return new Replay(days);
+    return new Replay(days, scenario);
   }
 
   // t=0은 첫날 시가(시작가), t=1부터 하루에 틱 5개씩
