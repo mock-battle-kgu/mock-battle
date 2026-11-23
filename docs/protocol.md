@@ -54,7 +54,7 @@
 // 요청
 { "nickname": "단타의신", "mode": "battle" }
 // 응답
-{ "ok": true, "roomId": "482913", "playerId": "p1" }
+{ "ok": true, "roomId": "482913", "playerId": "p1", "token": "9f2c4e1a7b3d5f60c8e2a4b6d8f01357" }
 ```
 연습 모드는 `"mode": "practice"`로 방을 만들고, 다른 사람은 입장할 수 없습니다(`ROOM_FULL`).
 실패 코드: `INVALID_NICKNAME`(1~10자 아님), `INVALID_MODE`(battle·practice 아님)
@@ -64,9 +64,23 @@
 // 요청
 { "roomId": "482913", "nickname": "존버왕" }
 // 응답
-{ "ok": true, "playerId": "p2" }
+{ "ok": true, "playerId": "p2", "token": "0a1b2c3d4e5f60718293a4b5c6d7e8f9" }
 ```
+- `token`(v0.3): 재접속용 비밀값 32자리. 화면은 `roomId`·`playerId`·`token`을 `sessionStorage`에 저장해 두었다가 새로고침 뒤 `room:rejoin`에 씁니다. 다른 참가자에게는 절대 보내지 않습니다(`room:update`에 없음).
 실패 코드: `ROOM_NOT_FOUND`, `ROOM_FULL`, `GAME_STARTED`, `NICKNAME_TAKEN`, `INVALID_NICKNAME`
+
+#### `room:rejoin` 재접속 — v0.3
+```json
+// 요청
+{ "roomId": "482913", "playerId": "p2", "token": "0a1b2c3d4e5f60718293a4b5c6d7e8f9" }
+// 응답
+{ "ok": true, "roomId": "482913", "playerId": "p2", "mode": "battle", "status": "playing" }
+```
+실패 코드: `ROOM_NOT_FOUND`(방이 이미 지워짐), `REJOIN_FAILED`(token이 틀림, 대기 중에 끊겨 목록에서 빠짐)
+- 새로고침·연결 끊김 뒤 새 소켓으로 **같은 참가자**로 돌아옵니다. 잔고·보유 주식·순위가 그대로 이어집니다.
+- 응답 직후 게임 중이면 `game:resume`, 막 끝난 방(삭제 전 30초)이면 `game:end`를 그 참가자에게만 다시 보냅니다.
+- 대기 중에 끊긴 참가자는 목록에서 빠지므로 `room:join`으로 다시 입장해야 합니다.
+- 실패하면 화면은 저장한 값을 지우고 시작 화면으로 갑니다.
 
 #### `room:start` 게임 시작 (방장만)
 ```json
@@ -126,6 +140,7 @@
 ```
 - `status`: `"waiting"` / `"playing"` / `"ended"`
 - 대기 중 방장이 나가면 다음 참가자가 방장(`hostId` 변경), 게임 중 나간 참가자는 `connected: false`로 순위에 남음
+- 게임 중 나간 참가자가 `room:rejoin`으로 돌아오면 다시 `connected: true` (v0.3)
 
 #### `game:start` 게임 시작 (방 전체)
 ```json
@@ -142,6 +157,27 @@
 ```
 - 시작가는 `game:start` 직후 오는 **t=0 `price:tick`**으로 받습니다.
 - 연습 모드는 `rumorCards: 0`, `stocks: [{ "code": "STOCK_A", "name": "???" }]`
+
+#### `game:resume` 재접속한 참가자에게 지금 상태 (그 참가자에게만, `room:rejoin` 직후) — v0.3
+```json
+{
+  "mode": "battle",
+  "durationSec": 600,
+  "startCash": 10000000,
+  "rumorCards": 2,
+  "stocks": [{ "code": "GANA", "name": "가나전자" }],
+  "t": 245,
+  "prices": { "GANA": 60400 },
+  "candles": [ { "t": 5, "candles": { "GANA": { "o": 59800, "h": 60600, "l": 59700, "c": 60400, "v": 1830 } } } ],
+  "portfolio": { "cash": 6980000, "holdings": { "GANA": { "qty": 50, "avgPrice": 60400 } }, "totalAsset": 10000000, "returnPct": 0.0 },
+  "stockInfo": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } },
+  "books": { "GANA": { "asks": [{ "price": 60500, "qty": 49 }], "bids": [{ "price": 60300, "qty": 49 }] } }
+}
+```
+- 화면은 이 값으로 `game:start`·지금까지의 `candle:close`·`portfolio:update`·`stock:info`·`orderbook:update`를 한 번에 받은 것처럼 상태를 다시 만듭니다.
+- `candles`: 지금까지 닫힌 캔들 전부 (`candle:close`와 같은 형식의 배열)
+- `stockInfo`: `stock:info`의 `stocks`와 같은 값 (없으면 `null`), `books`: `orderbook:update`의 `books`와 같은 값
+- 순위·현재가는 다음 1초 알림(`rank:update`, `price:tick`)으로 이어서 받습니다.
 
 #### `price:tick` 현재가 (방 전체, 1초마다)
 ```json
@@ -350,6 +386,7 @@ Docker 헬스체크와 GitHub Actions 통합 테스트에서 사용합니다.
 | `INVALID_STOCK` | 이 게임에 없는 종목 코드 |
 | `INVALID_SIDE` | side가 buy·sell이 아님 |
 | `NO_LIQUIDITY` | 호가 잔량이 없음 (1초 뒤 다시 채워짐) |
+| `REJOIN_FAILED` | 재접속 실패 (token이 틀림, 대기 중에 끊겨 목록에서 빠짐) |
 | `NO_RUMOR_CARD` | 루머 카드 소진 |
 | `INVALID_NICKNAME` | 닉네임이 비었거나 10자 초과 |
 | `INVALID_MODE` | mode가 battle·practice가 아님 |
