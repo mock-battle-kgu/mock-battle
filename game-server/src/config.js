@@ -15,6 +15,8 @@ module.exports = {
   rumorCards: 2,
   // 틱 몇 개로 캔들 하나를 만들지 (1초 틱 × 5 = 5초 캔들)
   candleTicks: 5,
+  // 호가창 (v0.3): 매수·매도 5단계, 1호가 잔량 300만 원어치, 한 단계마다 1.5배
+  orderBook: { levels: 5, baseDepthWon: 3_000_000, depthGrowth: 1.5 },
   // 시세가 끊겨도 게임이 끝나도록 하는 여유 시간(초)
   backupGraceSec: 5,
   // 게임이 끝난 뒤 방을 지우기까지 기다리는 시간(밀리초)

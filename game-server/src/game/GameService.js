@@ -21,6 +21,7 @@ class GameService {
     broadcastRoom,
     candleTicks = 5,
     revealScenario = () => null,
+    createOrderBook = null, // 종목마다 호가창을 만드는 함수 (없으면 v0.2처럼 현재가로 체결)
     random = Math.random,
   }) {
     Object.assign(this, {
@@ -28,6 +29,7 @@ class GameService {
       scenarioIds, backupGraceSec, endedRoomTtlMs, broadcastRoom, candleTicks, revealScenario, random,
     });
     this.games = new Map(); // roomId → 진행 중인 게임
+    this.createOrderBook = createOrderBook;
   }
 
   startGame(room) {
@@ -42,6 +44,8 @@ class GameService {
       scenarioId: isBattle ? null : this.pickScenario(),
       candleBuilder: new CandleBuilder(this.candleTicks),
       candles: [], // 완성된 캔들 기록 (결과 화면·복기용)
+      books: {}, // 종목별 호가창 (createOrderBook이 있을 때만)
+      fundamentals: null, // 종목 지표 (stock:info, 재접속 때 다시 보냄)
       stockCodes: stocks.map((s) => s.code),
       // 참가자마다 시작 자금으로 계좌를 만든다
       portfolios: new Map(room.players.map((p) => [p.playerId, new Portfolio(this.startCash)])),
@@ -84,6 +88,7 @@ class GameService {
     game.prices = { ...game.prices, ...prices };
     this.io.to(roomId).emit('price:tick', { t, prices });
     this.emitCandle(game, game.candleBuilder.add(t, prices));
+    this.refreshBooks(game, prices);
     this.emitStandings(game);
     if (t >= this.durationSec) this.endGame(roomId, 'time');
   }
@@ -109,7 +114,7 @@ class GameService {
     this.io.to(game.roomId).emit('rank:update', { t: game.t, ranks });
   }
 
-  // order:place 처리: 서버가 가진 최신 시세로 즉시 체결 (화면이 보낸 가격은 받지 않음)
+  // order:place 처리: 호가창을 차례로 먹으며 체결 (화면이 보낸 가격은 받지 않음)
   placeOrder({ roomId, playerId, stock, side, qty }) {
     const game = this.games.get(roomId);
     if (!game || game.ended) throw new GameError('GAME_NOT_PLAYING', 'game is not playing');
@@ -117,16 +122,55 @@ class GameService {
     if (!portfolio) throw new GameError('GAME_NOT_PLAYING', 'player is not in this game');
     if (!game.stockCodes.includes(stock)) throw new GameError('INVALID_STOCK', 'unknown stock');
     if (side !== 'buy' && side !== 'sell') throw new GameError('INVALID_SIDE', 'side must be buy or sell');
-    const price = game.prices[stock];
-    if (price === undefined) throw new GameError('GAME_NOT_PLAYING', 'price is not ready yet');
+    const lastPrice = game.prices[stock];
+    if (lastPrice === undefined) throw new GameError('GAME_NOT_PLAYING', 'price is not ready yet');
 
-    const result = side === 'buy' ? portfolio.buy(stock, qty, price) : portfolio.sell(stock, qty, price);
+    const { result, fills } = this.execute(game, portfolio, { stock, side, qty, lastPrice });
+    const requestedQty = qty;
+    const { price } = result; // 평균 체결가
+    qty = result.qty; // 호가 잔량이 모자라면 일부만 체결된다
     game.orders.push({ t: game.t, playerId, stock, side, qty, price });
     // 체결되면 1초를 기다리지 않고 바로 내 계좌 상태를 보낸다
     const player = this.players(game).find((p) => p.playerId === playerId);
     if (player) this.emitPortfolio(game, player);
     this.logger?.debug({ roomId, playerId, stock, side, qty, price }, 'order filled');
-    return result;
+    return fills ? { ...result, requestedQty, fills } : result;
+  }
+
+  // 체결: 호가창이 있으면 호가를 차례로 먹고, 없으면 현재가로 바로 체결 (v0.2 방식)
+  // 순서: 미리보기(quote) → 계좌 반영(오류면 여기서 멈춤, 호가는 그대로) → 잔량 차감(commit)
+  execute(game, portfolio, { stock, side, qty, lastPrice }) {
+    const book = game.books[stock];
+    if (!book) {
+      const result = side === 'buy' ? portfolio.buy(stock, qty, lastPrice) : portfolio.sell(stock, qty, lastPrice);
+      return { result, fills: null };
+    }
+    Portfolio.checkQty(qty);
+    const { fills } = book.quote(side, qty);
+    const result = portfolio.applyFills(stock, side, fills);
+    book.commit(side, fills);
+    this.io.to(game.roomId).emit('orderbook:update', { t: game.t, books: { [stock]: book.snapshot() } });
+    return { result, fills };
+  }
+
+  // 1초마다: 새 시세로 호가와 잔량을 다시 만들고 방 전체에 보낸다
+  refreshBooks(game, prices) {
+    if (!this.createOrderBook) return;
+    const books = {};
+    for (const [code, price] of Object.entries(prices)) {
+      game.books[code] ??= this.createOrderBook();
+      game.books[code].refresh(price);
+      books[code] = game.books[code].snapshot();
+    }
+    this.io.to(game.roomId).emit('orderbook:update', { t: game.t, books });
+  }
+
+  // market.tick t=0의 종목 지표를 화면에 전달 (protocol.md stock:info)
+  handleStockInfo({ roomId, fundamentals }) {
+    const game = this.games.get(roomId);
+    if (!game || game.ended || !fundamentals) return;
+    game.fundamentals = fundamentals;
+    this.io.to(roomId).emit('stock:info', { stocks: fundamentals });
   }
 
   emitCandle(game, closed) {

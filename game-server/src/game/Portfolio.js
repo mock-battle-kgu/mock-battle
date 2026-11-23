@@ -17,29 +17,39 @@ class Portfolio {
     }
   }
 
+  // 여러 호가에 걸친 체결을 한 번에 반영 (v0.3 호가창). fills = [{ price, qty }]
+  // 현금·주식이 모자라면 아무것도 바꾸지 않고 오류를 던진다
+  applyFills(code, side, fills) {
+    const qty = fills.reduce((sum, f) => sum + f.qty, 0);
+    const amount = fills.reduce((sum, f) => sum + f.price * f.qty, 0);
+    Portfolio.checkQty(qty);
+
+    if (side === 'buy') {
+      if (this.cash < amount) throw new GameError('NOT_ENOUGH_CASH', 'not enough cash');
+      const held = this.holdings.get(code) ?? { qty: 0, avgPrice: 0 };
+      const newQty = held.qty + qty;
+      // 평균단가 = (기존 수량 × 기존 평균 + 이번 체결 금액) ÷ 새 수량, 원 단위 반올림
+      this.holdings.set(code, { qty: newQty, avgPrice: Math.round((held.qty * held.avgPrice + amount) / newQty) });
+      this.cash -= amount;
+    } else {
+      const held = this.holdings.get(code);
+      if (!held || held.qty < qty) throw new GameError('NOT_ENOUGH_SHARES', 'not enough shares');
+      held.qty -= qty; // 매도해도 평균단가는 그대로
+      if (held.qty === 0) this.holdings.delete(code);
+      this.cash += amount;
+    }
+    // price는 평균 체결가 (원 단위 반올림)
+    return { price: Math.round(amount / qty), qty, cash: this.cash };
+  }
+
   buy(code, qty, price) {
     Portfolio.checkQty(qty);
-    const cost = price * qty;
-    if (this.cash < cost) throw new GameError('NOT_ENOUGH_CASH', 'not enough cash');
-
-    const held = this.holdings.get(code) ?? { qty: 0, avgPrice: 0 };
-    const newQty = held.qty + qty;
-    // 평균단가 = (기존 수량 × 기존 평균 + 체결 수량 × 체결가) ÷ 새 수량, 원 단위 반올림
-    const avgPrice = Math.round((held.qty * held.avgPrice + qty * price) / newQty);
-    this.holdings.set(code, { qty: newQty, avgPrice });
-    this.cash -= cost;
-    return { price, qty, cash: this.cash };
+    return this.applyFills(code, 'buy', [{ price, qty }]);
   }
 
   sell(code, qty, price) {
     Portfolio.checkQty(qty);
-    const held = this.holdings.get(code);
-    if (!held || held.qty < qty) throw new GameError('NOT_ENOUGH_SHARES', 'not enough shares');
-
-    held.qty -= qty; // 매도해도 평균단가는 그대로
-    if (held.qty === 0) this.holdings.delete(code);
-    this.cash += price * qty;
-    return { price, qty, cash: this.cash };
+    return this.applyFills(code, 'sell', [{ price, qty }]);
   }
 
   // 총자산 = 현금 + Σ(보유 수량 × 현재가). 현재가가 없으면 평균단가로 계산
