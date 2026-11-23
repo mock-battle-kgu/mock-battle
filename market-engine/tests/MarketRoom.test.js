@@ -190,4 +190,32 @@ describe("MarketRoom", () => {
       expect(room.fundamentals.STOCK_A.sector).toBe(undefined);
     }
   });
+
+  test("대결 모드: 매 틱 종목별 거래량이 있고 t=0은 0", () => {
+    const { room } = createRoom({ stocks: ["GANA", "DARA"], seed: 2 });
+    expect(room.volumes).toEqual({ GANA: 0, DARA: 0 });
+    room.start();
+    jest.advanceTimersByTime(3000);
+    expect(room.volumes.GANA > 0 && room.volumes.DARA > 0).toBe(true);
+  });
+
+  test("거래량을 추가해도 같은 시드의 가격은 그대로", () => {
+    const PriceModel = require("../src/model/PriceModel");
+    const { room, prices } = createRoom({ stocks: ["GANA"], seed: 13, durationSec: 600 });
+    room.start();
+    jest.advanceTimersByTime(30000);
+    // 뉴스(첫 뉴스는 40초 이후)·순매수가 없는 30초 동안은 PriceModel과 같아야 함
+    const base = new PriceModel({ codes: ["GANA"], seed: 13, fundamentals: room.fundamentals });
+    const expected = [base.snapshot()];
+    for (let t = 1; t <= 30; t++) expected.push(base.step());
+    expect(prices.slice(0, 31)).toEqual(expected);
+  });
+
+  test("연습 모드: STOCK_A 거래량이 재생됨", () => {
+    const { room } = createRoom({ mode: "practice", stocks: [], scenarioId: "covid-2020", durationSec: 600 });
+    expect(room.volumes).toEqual({ STOCK_A: 0 });
+    room.start();
+    jest.advanceTimersByTime(5000);
+    expect(room.volumes.STOCK_A).toBe(room.replay.volumeAt(5));
+  });
 });
