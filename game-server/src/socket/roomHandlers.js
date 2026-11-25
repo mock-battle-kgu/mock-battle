@@ -37,7 +37,7 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
         const { room, player } = rooms.createRoom({ ...payload, socketId: socket.id });
         enter(socket, room, player);
         logger?.info({ roomId: room.roomId, mode: room.mode }, 'room created');
-        return { roomId: room.roomId, playerId: player.playerId };
+        return { roomId: room.roomId, playerId: player.playerId, token: player.token };
       });
     });
 
@@ -47,7 +47,7 @@ function registerRoomHandlers({ io, rooms, logger, onGameStart = () => {} }) {
         const { room, player } = rooms.joinRoom({ ...payload, socketId: socket.id });
         enter(socket, room, player);
         logger?.info({ roomId: room.roomId, playerId: player.playerId }, 'player joined');
-        return { playerId: player.playerId };
+        return { playerId: player.playerId, token: player.token };
       });
     });
 

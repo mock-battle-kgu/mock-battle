@@ -7,6 +7,7 @@ const { GameService } = require('./game/GameService');
 const { ScenarioCatalog } = require('./game/ScenarioCatalog');
 const { registerRoomHandlers, broadcastRoom } = require('./socket/roomHandlers');
 const { registerGameHandlers } = require('./socket/gameHandlers');
+const { registerRejoinHandlers } = require('./socket/rejoinHandlers');
 
 async function main() {
   const { server, io } = createApp({ logger });
@@ -35,6 +36,7 @@ async function main() {
   market.onTick((tick) => games.handleTick(tick));
   registerRoomHandlers({ io, rooms, logger, onGameStart: (room) => games.startGame(room) });
   registerGameHandlers({ io, games, logger });
+  registerRejoinHandlers({ io, rooms, games, logger });
 
   server.listen(config.port, () => {
     logger.info({ port: config.port, gameDurationSec: config.gameDurationSec }, 'game-server started');
