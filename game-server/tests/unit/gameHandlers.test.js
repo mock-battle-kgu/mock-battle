@@ -15,7 +15,7 @@ beforeEach(async () => {
   ({ server, io } = createApp());
   const rooms = new RoomManager();
   games = new GameService({
-    io, rooms, market: { publishControl: () => {} },
+    io, rooms, market: { publishControl: () => {}, publishFlow: () => {} },
     durationSec: 600, startCash: 10_000_000, rumorCards: 2, scenarioIds: ['covid-2020'],
     backupGraceSec: 5, endedRoomTtlMs: 30_000, broadcastRoom: (r) => broadcastRoom(io, r),
   });
