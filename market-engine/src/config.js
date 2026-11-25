@@ -31,4 +31,13 @@ module.exports = {
     spreadTicks: 5, // 효과를 5틱에 나눠 반영
     quietEndSec: 15, // 끝나기 15초 전부터는 새 뉴스 없음
   },
+
+  // 플레이어 시장 영향 (가이드 4-3)
+  // impactPct = 최근 10초 순매수량 ÷ 기준 거래량 × 계수, 범위 ±3%
+  flow: {
+    windowSec: 10, // 최근 10초 순매수량을 합산, 10초에 걸쳐 나눠 반영
+    baseVolume: 1000, // 기준 거래량 (주)
+    multiplier: 2, // 기준 거래량만큼 사면 +2%
+    maxImpactPct: 3, // 최대 ±3%
+  },
 };

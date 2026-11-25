@@ -80,6 +80,16 @@ class RoomManager {
     room.start();
   }
 
+  // market.flow: { roomId, t, netQty } → 해당 방에 전달
+  handleFlow(msg) {
+    if (!msg || typeof msg !== "object") return;
+    const room = this.rooms.get(msg.roomId);
+    if (!room) return; // 끝난 방이나 없는 방의 flow는 조용히 무시
+    if (!room.addFlow(msg.t, msg.netQty)) {
+      this.logger.debug({ roomId: msg.roomId }, "flow 무시 (연습 모드이거나 형식 오류)");
+    }
+  }
+
   stopRoom(roomId) {
     const room = this.rooms.get(roomId);
     if (!room) {

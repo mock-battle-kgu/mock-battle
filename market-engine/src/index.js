@@ -1,4 +1,4 @@
-// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control 구독 → market.tick·market.news 발행
+// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control·market.flow 구독 → market.tick·market.news 발행
 const amqp = require("amqplib");
 const config = require("./config");
 const logger = require("./logger");
@@ -45,9 +45,13 @@ async function main() {
     onTick: (room) => {
       const codes = Object.keys(room.prices);
       if (codes.length === 0) return;
-      // impactPct(플레이어 영향)는 G단계 전까지 0으로 보냄 (연습 모드는 항상 0)
-      const impactPct = Object.fromEntries(codes.map((code) => [code, 0]));
-      publish("market.tick", { roomId: room.roomId, t: room.t, prices: room.prices, impactPct });
+      // impactPct: 최근 10초 플레이어 순매수 영향 (연습 모드는 항상 0)
+      publish("market.tick", {
+        roomId: room.roomId,
+        t: room.t,
+        prices: room.prices,
+        impactPct: room.impactPct,
+      });
       logger.debug({ roomId: room.roomId, t: room.t, prices: room.prices }, "tick 발행");
     },
     // protocol.md 3장 market.news (effectPct는 시세 엔진 내부용, 화면에는 headline만)
@@ -57,22 +61,26 @@ async function main() {
     },
   });
 
-  // market.control 구독: 엔진 전용 임시 큐 (엔진이 꺼지면 자동 삭제)
+  // market.control·market.flow 구독: 엔진 전용 임시 큐 (엔진이 꺼지면 자동 삭제)
   const { queue } = await channel.assertQueue("", { exclusive: true });
   await channel.bindQueue(queue, exchange, "market.control");
+  await channel.bindQueue(queue, exchange, "market.flow");
   await channel.consume(
     queue,
     (msg) => {
       if (!msg) return;
+      const key = msg.fields.routingKey;
       try {
-        rooms.handleControl(JSON.parse(msg.content.toString()));
+        const body = JSON.parse(msg.content.toString());
+        if (key === "market.control") rooms.handleControl(body);
+        else if (key === "market.flow") rooms.handleFlow(body);
       } catch (err) {
-        logger.warn({ error: err.message }, "control 메시지를 읽을 수 없음");
+        logger.warn({ key, error: err.message }, "메시지를 읽을 수 없음");
       }
     },
     { noAck: true }
   );
-  logger.info("market.control 구독 시작");
+  logger.info("market.control, market.flow 구독 시작");
 
   // RabbitMQ가 갑자기 끊기면 종료 → Docker가 다시 띄우도록 함
   connection.on("close", () => {

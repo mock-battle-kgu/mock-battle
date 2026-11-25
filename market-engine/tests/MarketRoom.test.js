@@ -138,4 +138,33 @@ describe("MarketRoom", () => {
     jest.advanceTimersByTime(600000);
     expect(news.length).toBe(0);
   });
+
+  test("대결 모드: 모두 같은 종목을 계속 사면 가격이 오름", () => {
+    const seed = 21;
+    const buyer = createRoom({ stocks: ["GANA"], durationSec: 600, seed });
+    const base = createRoom({ stocks: ["GANA"], durationSec: 600, seed });
+    buyer.room.start();
+    base.room.start();
+    for (let t = 1; t <= 30; t++) {
+      buyer.room.addFlow(t, { GANA: 800 }); // 1초마다 800주 순매수
+      jest.advanceTimersByTime(1000);
+    }
+    expect(buyer.prices[30].GANA > base.prices[30].GANA).toBe(true);
+    expect(buyer.room.impactPct.GANA).toBe(3); // 10초 합 8000주 → 상한 3%
+  });
+
+  test("대결 모드: 순매수가 없으면 impactPct는 0", () => {
+    const { room } = createRoom({ stocks: ["GANA", "DARA"], durationSec: 600, seed: 4 });
+    room.start();
+    jest.advanceTimersByTime(5000);
+    expect(room.impactPct).toEqual({ GANA: 0, DARA: 0 });
+  });
+
+  test("연습 모드: flow를 받아도 무시하고 impactPct는 0", () => {
+    const { room } = createRoom({ mode: "practice", stocks: [], scenarioId: "covid-2020", durationSec: 600 });
+    room.start();
+    expect(room.addFlow(1, { STOCK_A: 1000 })).toBe(false);
+    jest.advanceTimersByTime(3000);
+    expect(room.impactPct).toEqual({ STOCK_A: 0 });
+  });
 });
