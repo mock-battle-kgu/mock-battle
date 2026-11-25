@@ -5,6 +5,7 @@ const { MarketClient } = require('./mq/marketClient');
 const { RoomManager } = require('./game/RoomManager');
 const { GameService } = require('./game/GameService');
 const { ScenarioCatalog } = require('./game/ScenarioCatalog');
+const { OrderBook } = require('./game/OrderBook');
 const { registerRoomHandlers, broadcastRoom } = require('./socket/roomHandlers');
 const { registerGameHandlers } = require('./socket/gameHandlers');
 
@@ -29,10 +30,14 @@ async function main() {
     revealScenario: (id) => scenarios.reveal(id),
     backupGraceSec: config.backupGraceSec,
     endedRoomTtlMs: config.endedRoomTtlMs,
+    createOrderBook: () => new OrderBook(config.orderBook),
     broadcastRoom: (room) => broadcastRoom(io, room),
   });
 
-  market.onTick((tick) => games.handleTick(tick));
+  market.onTick((tick) => {
+    games.handleTick(tick);
+    if (tick.fundamentals) games.handleStockInfo(tick); // t=0에만 옴
+  });
   registerRoomHandlers({ io, rooms, logger, onGameStart: (room) => games.startGame(room) });
   registerGameHandlers({ io, games, logger });
 
