@@ -1,0 +1,50 @@
+{
+  "GANA": [
+    { "headline": "가나전자, 차세대 칩 대형 공급 계약 체결 임박", "effectPct": 4.0 },
+    { "headline": "가나전자, 분기 영업이익 시장 예상치 크게 웃돌아", "effectPct": 3.0 },
+    { "headline": "가나전자, 신규 생산 라인 조기 가동 결정", "effectPct": 2.0 },
+    { "headline": "가나전자, 주요 고객사 주문 축소 통보", "effectPct": -4.0 },
+    { "headline": "가나전자, 공장 설비 고장으로 일부 생산 중단", "effectPct": -3.0 },
+    { "headline": "가나전자, 메모리 가격 하락세 지속 전망", "effectPct": -2.0 }
+  ],
+  "DARA": [
+    { "headline": "다라항공, 여행 수요 회복에 국제선 예약 급증", "effectPct": 4.0 },
+    { "headline": "다라항공, 신규 장거리 노선 취항 승인", "effectPct": 3.0 },
+    { "headline": "다라항공, 화물 운임 상승으로 실적 개선 기대", "effectPct": 2.0 },
+    { "headline": "다라항공, 유가 급등에 실적 경고", "effectPct": -4.0 },
+    { "headline": "다라항공, 기체 결함으로 일부 항공편 운항 중단", "effectPct": -3.0 },
+    { "headline": "다라항공, 환율 상승으로 비용 부담 확대", "effectPct": -2.0 }
+  ],
+  "MABA": [
+    { "headline": "마바게임즈, 신작 사전 예약 300만 명 돌파", "effectPct": 5.0 },
+    { "headline": "마바게임즈, 해외 대형 퍼블리셔와 판권 계약", "effectPct": 3.0 },
+    { "headline": "마바게임즈, 인기작 매출 순위 1위 탈환", "effectPct": 2.0 },
+    { "headline": "마바게임즈, 기대작 출시 무기한 연기", "effectPct": -5.0 },
+    { "headline": "마바게임즈, 확률형 아이템 논란으로 이용자 반발", "effectPct": -3.0 },
+    { "headline": "마바게임즈, 핵심 개발진 대거 이탈 소식", "effectPct": -2.0 }
+  ],
+  "SAAH": [
+    { "headline": "사아바이오, 신약 임상 3상 성공 발표", "effectPct": 5.0 },
+    { "headline": "사아바이오, 글로벌 제약사에 기술 수출 계약", "effectPct": 4.0 },
+    { "headline": "사아바이오, 신약 품목 허가 신청 완료", "effectPct": 2.0 },
+    { "headline": "사아바이오, 임상 시험 일시 중단 권고 받아", "effectPct": -5.0 },
+    { "headline": "사아바이오, 기술 수출 계약 해지 통보", "effectPct": -4.0 },
+    { "headline": "사아바이오, 대규모 유상증자 검토 중", "effectPct": -2.0 }
+  ],
+  "JACHA": [
+    { "headline": "자차푸드, 간편식 신제품 판매 호조", "effectPct": 2.5 },
+    { "headline": "자차푸드, 해외 대형 유통망 입점 확정", "effectPct": 2.0 },
+    { "headline": "자차푸드, 원재료 가격 안정으로 수익성 개선", "effectPct": 1.5 },
+    { "headline": "자차푸드, 일부 제품 이물질 검출로 회수 조치", "effectPct": -2.5 },
+    { "headline": "자차푸드, 곡물 가격 급등에 원가 부담 커져", "effectPct": -2.0 },
+    { "headline": "자차푸드, 내수 소비 둔화로 매출 정체", "effectPct": -1.5 }
+  ],
+  "KATA": [
+    { "headline": "카타에너지, 정부 신재생 에너지 지원 확대 수혜 기대", "effectPct": 4.0 },
+    { "headline": "카타에너지, 대규모 해상 풍력 사업 수주", "effectPct": 3.0 },
+    { "headline": "카타에너지, 에너지 가격 상승에 실적 개선", "effectPct": 2.0 },
+    { "headline": "카타에너지, 발전 설비 화재로 가동 중단", "effectPct": -4.0 },
+    { "headline": "카타에너지, 보조금 축소 방침에 사업성 우려", "effectPct": -3.0 },
+    { "headline": "카타에너지, 대형 프로젝트 착공 지연", "effectPct": -2.0 }
+  ]
+}

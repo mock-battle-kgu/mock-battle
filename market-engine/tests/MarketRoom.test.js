@@ -4,6 +4,7 @@ const { Replay } = require("../src/model/Replay");
 function createRoom(overrides = {}) {
   const ticks = [];
   const prices = [];
+  const news = [];
   const onEnd = jest.fn();
   const room = new MarketRoom(
     { roomId: "482913", mode: "battle", durationSec: 5, stocks: ["GANA"], ...overrides },
@@ -14,9 +15,10 @@ function createRoom(overrides = {}) {
         prices.push({ ...r.prices });
       },
       onEnd,
+      onNews: (r, n) => news.push({ ...n, pricesAtNews: { ...r.prices } }),
     }
   );
-  return { room, ticks, prices, onEnd };
+  return { room, ticks, prices, news, onEnd };
 }
 
 describe("MarketRoom", () => {
@@ -96,5 +98,44 @@ describe("MarketRoom", () => {
 
   test("연습 모드: 없는 시나리오면 방을 만들 수 없음", () => {
     expect(() => createRoom({ mode: "practice", stocks: [], scenarioId: "nope" })).toThrow();
+  });
+
+  test("대결 모드: 10분 동안 뉴스가 7~12개 발행됨", () => {
+    const { room, news } = createRoom({ stocks: ["GANA", "DARA", "MABA"], durationSec: 600, seed: 8 });
+    room.start();
+    jest.advanceTimersByTime(600000);
+    expect(news.length >= 7 && news.length <= 12).toBe(true);
+    expect(news.every((n) => typeof n.headline === "string")).toBe(true);
+  });
+
+  test("대결 모드: 큰 호재 뉴스 뒤 5틱 동안 해당 종목이 뉴스 없을 때보다 오름", () => {
+    // 같은 시드로 뉴스 없는 가격 흐름과 비교
+    const PriceModel = require("../src/model/PriceModel");
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      const { room, prices, news } = createRoom({ stocks: ["SAAH"], durationSec: 600, seed });
+      room.start();
+      jest.advanceTimersByTime(600000);
+      const good = news.find((n) => n.effectPct >= 4);
+      if (!good) continue;
+
+      const base = new PriceModel({ codes: ["SAAH"], seed });
+      const baseHistory = [base.snapshot()];
+      for (let t = 1; t <= 600; t++) baseHistory.push(base.step());
+
+      // 뉴스 이전 효과까지 포함되어 있으므로 "뉴스 5틱 동안의 상승폭"을 비교
+      const t0 = good.t;
+      const withNews = prices[t0 + 5].SAAH / prices[t0].SAAH;
+      const without = baseHistory[t0 + 5].SAAH / baseHistory[t0].SAAH;
+      expect(withNews > without).toBe(true);
+      return;
+    }
+    throw new Error("테스트할 호재 뉴스를 찾지 못함");
+  });
+
+  test("연습 모드: 뉴스가 발행되지 않음", () => {
+    const { room, news } = createRoom({ mode: "practice", stocks: [], scenarioId: "covid-2020", durationSec: 600 });
+    room.start();
+    jest.advanceTimersByTime(600000);
+    expect(news.length).toBe(0);
   });
 });

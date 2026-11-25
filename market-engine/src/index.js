@@ -1,4 +1,4 @@
-// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control 구독 → market.tick 발행
+// 시세 엔진 시작점: RabbitMQ 연결 → exchange 선언 → market.control 구독 → market.tick·market.news 발행
 const amqp = require("amqplib");
 const config = require("./config");
 const logger = require("./logger");
@@ -49,6 +49,11 @@ async function main() {
       const impactPct = Object.fromEntries(codes.map((code) => [code, 0]));
       publish("market.tick", { roomId: room.roomId, t: room.t, prices: room.prices, impactPct });
       logger.debug({ roomId: room.roomId, t: room.t, prices: room.prices }, "tick 발행");
+    },
+    // protocol.md 3장 market.news (effectPct는 시세 엔진 내부용, 화면에는 headline만)
+    onNews: (room, news) => {
+      publish("market.news", { roomId: room.roomId, ...news });
+      logger.info({ roomId: room.roomId, t: news.t, stock: news.stock }, "뉴스 발행");
     },
   });
 
