@@ -1,4 +1,4 @@
-# 통신 메시지 규약 (v0.2)
+# 통신 메시지 규약 (v0.3)
 
 모든 컨테이너가 주고받는 메시지의 이름과 형식을 정의합니다.
 이 문서를 바꿀 때는 반드시 PR로 수정하고, 영향을 받는 담당자가 리뷰합니다.
@@ -54,7 +54,7 @@
 // 요청
 { "nickname": "단타의신", "mode": "battle" }
 // 응답
-{ "ok": true, "roomId": "482913", "playerId": "p1" }
+{ "ok": true, "roomId": "482913", "playerId": "p1", "token": "9f2c4e1a7b3d5f60c8e2a4b6d8f01357" }
 ```
 연습 모드는 `"mode": "practice"`로 방을 만들고, 다른 사람은 입장할 수 없습니다(`ROOM_FULL`).
 실패 코드: `INVALID_NICKNAME`(1~10자 아님), `INVALID_MODE`(battle·practice 아님)
@@ -64,9 +64,23 @@
 // 요청
 { "roomId": "482913", "nickname": "존버왕" }
 // 응답
-{ "ok": true, "playerId": "p2" }
+{ "ok": true, "playerId": "p2", "token": "0a1b2c3d4e5f60718293a4b5c6d7e8f9" }
 ```
+- `token`(v0.3): 재접속용 비밀값 32자리. 화면은 `roomId`·`playerId`·`token`을 `sessionStorage`에 저장해 두었다가 새로고침 뒤 `room:rejoin`에 씁니다. 다른 참가자에게는 절대 보내지 않습니다(`room:update`에 없음).
 실패 코드: `ROOM_NOT_FOUND`, `ROOM_FULL`, `GAME_STARTED`, `NICKNAME_TAKEN`, `INVALID_NICKNAME`
+
+#### `room:rejoin` 재접속 — v0.3
+```json
+// 요청
+{ "roomId": "482913", "playerId": "p2", "token": "0a1b2c3d4e5f60718293a4b5c6d7e8f9" }
+// 응답
+{ "ok": true, "roomId": "482913", "playerId": "p2", "mode": "battle", "status": "playing" }
+```
+실패 코드: `ROOM_NOT_FOUND`(방이 이미 지워짐), `REJOIN_FAILED`(token이 틀림, 대기 중에 끊겨 목록에서 빠짐)
+- 새로고침·연결 끊김 뒤 새 소켓으로 **같은 참가자**로 돌아옵니다. 잔고·보유 주식·순위가 그대로 이어집니다.
+- 응답 직후 게임 중이면 `game:resume`, 막 끝난 방(삭제 전 30초)이면 `game:end`를 그 참가자에게만 다시 보냅니다.
+- 대기 중에 끊긴 참가자는 목록에서 빠지므로 `room:join`으로 다시 입장해야 합니다.
+- 실패하면 화면은 저장한 값을 지우고 시작 화면으로 갑니다.
 
 #### `room:start` 게임 시작 (방장만)
 ```json
@@ -82,10 +96,19 @@
 // 요청
 { "roomId": "482913", "stock": "GANA", "side": "buy", "qty": 50 }
 // 응답
-{ "ok": true, "price": 60400, "qty": 50, "cash": 6980000 }
+{
+  "ok": true,
+  "price": 60540,
+  "qty": 50,
+  "requestedQty": 50,
+  "fills": [{ "price": 60500, "qty": 30 }, { "price": 60600, "qty": 20 }],
+  "cash": 5973000
+}
 ```
-실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `INVALID_STOCK`, `INVALID_SIDE`, `GAME_NOT_PLAYING`
-- 체결가는 **서버가 가진 최신 시세**입니다. 화면이 보낸 가격은 받지 않습니다.
+실패 코드: `NOT_ENOUGH_CASH`, `NOT_ENOUGH_SHARES`, `INVALID_QTY`, `INVALID_STOCK`, `INVALID_SIDE`, `GAME_NOT_PLAYING`, `NO_LIQUIDITY`
+- **v0.3부터 호가창 체결**입니다. 매수는 매도 1호가부터, 매도는 매수 1호가부터 차례로 체결합니다. 화면이 보낸 가격은 받지 않습니다.
+- `price`는 **평균 체결가**(원 단위 반올림), `qty`는 실제 체결 수량, `requestedQty`는 요청 수량, `fills`는 호가별 체결 내역입니다.
+- 호가 잔량이 모자라면 있는 만큼만 체결합니다(`qty` < `requestedQty`). 잔량이 하나도 없으면 `NO_LIQUIDITY`.
 - 방과 참가자는 소켓 연결로 판단합니다. 요청의 `roomId`는 생략해도 되고, 다른 사람의 `playerId`를 넣어도 무시됩니다.
 - 응답의 `cash`는 체결 후 내 현금입니다. 보유 주식과 수익률은 `portfolio:update`로 받습니다.
 
@@ -117,6 +140,7 @@
 ```
 - `status`: `"waiting"` / `"playing"` / `"ended"`
 - 대기 중 방장이 나가면 다음 참가자가 방장(`hostId` 변경), 게임 중 나간 참가자는 `connected: false`로 순위에 남음
+- 게임 중 나간 참가자가 `room:rejoin`으로 돌아오면 다시 `connected: true` (v0.3)
 
 #### `game:start` 게임 시작 (방 전체)
 ```json
@@ -134,6 +158,27 @@
 - 시작가는 `game:start` 직후 오는 **t=0 `price:tick`**으로 받습니다.
 - 연습 모드는 `rumorCards: 0`, `stocks: [{ "code": "STOCK_A", "name": "???" }]`
 
+#### `game:resume` 재접속한 참가자에게 지금 상태 (그 참가자에게만, `room:rejoin` 직후) — v0.3
+```json
+{
+  "mode": "battle",
+  "durationSec": 600,
+  "startCash": 10000000,
+  "rumorCards": 2,
+  "stocks": [{ "code": "GANA", "name": "가나전자" }],
+  "t": 245,
+  "prices": { "GANA": 60400 },
+  "candles": [ { "t": 5, "candles": { "GANA": { "o": 59800, "h": 60600, "l": 59700, "c": 60400, "v": 1830 } } } ],
+  "portfolio": { "cash": 6980000, "holdings": { "GANA": { "qty": 50, "avgPrice": 60400 } }, "totalAsset": 10000000, "returnPct": 0.0 },
+  "stockInfo": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } },
+  "books": { "GANA": { "asks": [{ "price": 60500, "qty": 49 }], "bids": [{ "price": 60300, "qty": 49 }] } }
+}
+```
+- 화면은 이 값으로 `game:start`·지금까지의 `candle:close`·`portfolio:update`·`stock:info`·`orderbook:update`를 한 번에 받은 것처럼 상태를 다시 만듭니다.
+- `candles`: 지금까지 닫힌 캔들 전부 (`candle:close`와 같은 형식의 배열)
+- `stockInfo`: `stock:info`의 `stocks`와 같은 값 (없으면 `null`), `books`: `orderbook:update`의 `books`와 같은 값
+- 순위·현재가는 다음 1초 알림(`rank:update`, `price:tick`)으로 이어서 받습니다.
+
 #### `price:tick` 현재가 (방 전체, 1초마다)
 ```json
 { "t": 125, "prices": { "GANA": 60400, "DARA": 18450 } }
@@ -141,12 +186,15 @@
 
 #### `candle:close` 캔들 완성 (방 전체, 5초마다)
 ```json
-{ "t": 125, "candles": { "GANA": { "o": 59800, "h": 60600, "l": 59700, "c": 60400 } } }
+{ "t": 125, "candles": { "GANA": { "o": 59800, "h": 60600, "l": 59700, "c": 60400, "v": 1830 } } }
 ```
 캔들은 서버가 만들어 보내서 모든 참가자의 차트가 똑같이 보이게 합니다.
 - 캔들 k = t가 `5k-4 ~ 5k`인 틱 5개 (t=1~5, 6~10, …). **t=0 시작가는 캔들에 넣지 않습니다.**
 - `t`는 캔들이 닫힌 시점. 게임이 5의 배수가 아닌 시점에 끝나면 남은 틱으로 마지막 캔들을 `game:end` 전에 보냅니다.
 - 연습 모드: 실제 하루 k ↔ t `5k-4 ~ 5k` 틱 5개 (t=0은 첫날 시가). 그래서 캔들 하나 = 실제 일봉 하나
+- `v` 거래량(주, v0.3): 캔들 동안 시세 엔진이 보낸 시장 거래량(`market.tick`의 `volumes`) + 참가자들의 실제 체결 수량. 대결·연습 모두 보냅니다.
+  - 대결 모드: 시세 엔진이 만든 가상 거래량 (가격이 크게 움직이면 늘어남)
+  - 연습 모드: 그날의 실제 거래량을 비율만 유지해 바꾼 값 (첫 20거래일 평균 = 100,000주). 실제 수치로 종목을 알아챌 수 없게 함
 
 #### `portfolio:update` 내 잔고 (해당 참가자에게만, 체결 시와 1초마다)
 ```json
@@ -183,7 +231,36 @@
 ```json
 { "t": 125, "windowSec": 10, "buyRatio": { "GANA": 0.64 }, "impactPct": { "GANA": 1.8 } }
 ```
-화면의 "매수 64% / 매도 36%" 막대와 "가격 +1.8% 반영" 표시에 사용합니다.
+화면의 "매수 64% / 매도 36%" 막대(매수 압력 게이지)와 "가격 +1.8% 반영" 표시에 사용합니다.
+- **대결 모드만** 보냅니다. 연습 모드는 혼자 하는 게임이라 매수 압력 게이지가 없습니다.
+- `buyRatio` = 최근 10초 참가자 매수 수량 ÷ (매수 + 매도 수량). 거래가 없던 종목은 빠집니다.
+
+#### `stock:info` 종목 지표 (방 전체, 게임 시작 시 1번) — v0.3
+```json
+{ "stocks": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } } }
+```
+- t=0 `price:tick`과 함께 옵니다. PER(현재가 ÷ EPS)과 PBR(현재가 ÷ BPS)은 화면이 매 틱 계산합니다.
+- 대결 모드: 시세 엔진이 판마다 만든 값 (EPS가 판마다 달라짐)
+- 연습 모드: `STOCK_A` 하나, **그 당시 실제 EPS·BPS를 가격과 같은 비율로 줄인 값**이라 PER·PBR은 실제와 같습니다. 업종(`sector`)은 종목을 짐작할 수 있어 빼고 보냅니다.
+```json
+{ "stocks": { "STOCK_A": { "eps": 610, "bps": 6890, "sectorPer": 11 } } }
+```
+
+#### `orderbook:update` 호가창 (방 전체, 1초마다 + 체결 시) — v0.3
+```json
+{
+  "t": 125,
+  "books": {
+    "GANA": {
+      "asks": [{ "price": 60500, "qty": 49 }, { "price": 60600, "qty": 74 }],
+      "bids": [{ "price": 60300, "qty": 49 }, { "price": 60200, "qty": 74 }]
+    }
+  }
+}
+```
+- `asks`(매도호가)는 싼 것부터, `bids`(매수호가)는 비싼 것부터 5단계씩. 잔량은 방 전체가 함께 씁니다.
+- 1초마다 모든 종목을 보내고, 체결되면 그 종목만 바로 보냅니다. 화면은 받은 종목만 덮어씁니다.
+- 호가 단위: 2만 원 미만 10원, 5만 원 미만 50원, 그 이상 100원. 잔량은 1초마다 다시 채웁니다.
 
 #### `game:end` 게임 종료 (방 전체)
 게임 종료 직전 `room:update`(status `ended`)가 함께 옵니다. 끝난 방은 30초 뒤 서버에서 삭제됩니다.
@@ -201,7 +278,8 @@
 - `ranks`: 마지막 시세 기준 최종 순위 (`totalAsset` 포함)
 - `rumors`: 어떤 뉴스가 루머였고 누가 퍼뜨렸는지 공개
 - `reveal`: 연습 모드에서만 사용, 대결 모드는 `null`
-  → `{ "scenarioId": "covid-2020", "name": "삼성전자", "code": "005930", "period": "2020-01 ~ 2020-06" }` (scenarios/index.json 기준)
+  → `{ "scenarioId": "covid-2020", "name": "삼성전자", "code": "005930", "period": "2020-01 ~ 2020-06", "fundamentals": { "sector": "반도체", "eps": 0, "bps": 0, "sectorPer": 0 } }` (scenarios/index.json 기준)
+  → v0.3: `fundamentals`에 업종과 **줄이기 전 실제 EPS·BPS**를 넣어 공개합니다 (0 자리는 index.json의 실제 값).
 
 ## 3. 게임 서버 ↔ 시세 엔진 (RabbitMQ)
 
@@ -233,9 +311,16 @@ exchange 이름: `market` (topic 타입, **durable: true**). 게임 서버와 �
 
 #### `market.tick` 가격
 ```json
-{ "roomId": "482913", "t": 125, "prices": { "GANA": 60400, "DARA": 18450 }, "impactPct": { "GANA": 1.8, "DARA": -0.6 } }
+{ "roomId": "482913", "t": 125, "prices": { "GANA": 60400, "DARA": 18450 }, "impactPct": { "GANA": 1.8, "DARA": -0.6 }, "volumes": { "GANA": 240, "DARA": 510 } }
 ```
+- `volumes` (v0.3): 이번 1초 동안의 시장 거래량(주). 게임 서버가 참가자 체결 수량을 더해 캔들의 `v`를 만듭니다.
 게임 서버는 이 값을 받아 `price:tick`, `market:flow`로 화면에 전달합니다.
+
+**t=0 메시지에만** 종목 지표가 함께 옵니다 (v0.3, 대결·연습 모두). 게임 서버는 이를 `stock:info`로 전달합니다. 연습 모드는 `STOCK_A` 하나이고 `sector`가 없습니다 (2-2 `stock:info` 참고).
+```json
+{ "roomId": "482913", "t": 0, "prices": { "GANA": 46000 }, "impactPct": { "GANA": 0 },
+  "fundamentals": { "GANA": { "sector": "반도체", "eps": 4120, "bps": 30000, "sectorPer": 13 } } }
+```
 
 #### `market.news` 진짜 뉴스
 ```json
@@ -270,6 +355,13 @@ exchange 이름: `market` (topic 타입, **durable: true**). 게임 서버와 �
 ```
 랭킹 방식(명예의 전당 / 회원 누적 랭킹)이 확정되면 이 부분을 수정합니다.
 
+#### `GET /api/stocks` 종목 정보 — v0.3
+```json
+// 응답 200
+{ "stocks": [ { "code": "GANA", "name": "가나전자", "sector": "반도체", "description": "메모리 반도체를 만드는 국내 대표 전자 기업" } ] }
+```
+대결 모드 종목 정보 카드에서 씁니다. 판마다 바뀌는 숫자(EPS 등)는 `stock:info`로 받습니다. 연습 모드는 종목을 숨기므로 쓰지 않습니다.
+
 #### `GET /api/health` 상태 확인
 ```json
 // 응답 200
@@ -293,6 +385,8 @@ Docker 헬스체크와 GitHub Actions 통합 테스트에서 사용합니다.
 | `INVALID_QTY` | 수량이 1 미만이거나 정수가 아님 |
 | `INVALID_STOCK` | 이 게임에 없는 종목 코드 |
 | `INVALID_SIDE` | side가 buy·sell이 아님 |
+| `NO_LIQUIDITY` | 호가 잔량이 없음 (1초 뒤 다시 채워짐) |
+| `REJOIN_FAILED` | 재접속 실패 (token이 틀림, 대기 중에 끊겨 목록에서 빠짐) |
 | `NO_RUMOR_CARD` | 루머 카드 소진 |
 | `INVALID_NICKNAME` | 닉네임이 비었거나 10자 초과 |
 | `INVALID_MODE` | mode가 battle·practice가 아님 |

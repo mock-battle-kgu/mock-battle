@@ -6,7 +6,7 @@ function setup({ mode = 'battle', durationSec = 10, random = () => 0 } = {}) {
   const controls = []; // 시세 엔진으로 보낸 것
   const roomUpdates = [];
   const io = { to: (room) => ({ emit: (event, data) => sent.push({ room, event, data }) }) };
-  const market = { publishControl: (msg) => controls.push(msg) };
+  const market = { publishControl: (msg) => controls.push(msg), publishFlow: () => {} };
   const rooms = new RoomManager();
 
   const { room } = rooms.createRoom({ nickname: '방장', mode, socketId: 's1' });
