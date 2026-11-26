@@ -5,6 +5,7 @@ const { CandleBuilder } = require('./CandleBuilder');
 const { Portfolio } = require('./Portfolio');
 const { GameError } = require('./errors');
 const { rankPlayers } = require('./Ranking');
+const { FlowTracker } = require('./FlowTracker');
 
 class GameService {
   constructor({
@@ -46,6 +47,7 @@ class GameService {
       // 참가자마다 시작 자금으로 계좌를 만든다
       portfolios: new Map(room.players.map((p) => [p.playerId, new Portfolio(this.startCash)])),
       orders: [], // 체결 기록 (플레이어 시장 영향·결과 분석용)
+      flow: isBattle ? new FlowTracker() : null, // 플레이어 시장 영향 (대결 모드만)
       backupTimer: null,
     };
     this.games.set(room.roomId, game);
@@ -77,12 +79,13 @@ class GameService {
   }
 
   // 시세 엔진의 market.tick 처리
-  handleTick({ roomId, t, prices }) {
+  handleTick({ roomId, t, prices, impactPct = {} }) {
     const game = this.games.get(roomId);
     if (!game || game.ended || !prices) return;
     game.t = t;
     game.prices = { ...game.prices, ...prices };
     this.io.to(roomId).emit('price:tick', { t, prices });
+    this.emitFlow(game, impactPct);
     this.emitCandle(game, game.candleBuilder.add(t, prices));
     this.emitStandings(game);
     if (t >= this.durationSec) this.endGame(roomId, 'time');
@@ -122,11 +125,25 @@ class GameService {
 
     const result = side === 'buy' ? portfolio.buy(stock, qty, price) : portfolio.sell(stock, qty, price);
     game.orders.push({ t: game.t, playerId, stock, side, qty, price });
+    game.flow?.record(stock, side, qty);
     // 체결되면 1초를 기다리지 않고 바로 내 계좌 상태를 보낸다
     const player = this.players(game).find((p) => p.playerId === playerId);
     if (player) this.emitPortfolio(game, player);
     this.logger?.debug({ roomId, playerId, stock, side, qty, price }, 'order filled');
     return result;
+  }
+
+  // 1초마다 (대결 모드만): 지난 1초 순매수량 → 시세 엔진, 최근 10초 매수 비율 → 화면
+  emitFlow(game, impactPct) {
+    if (!game.flow) return;
+    const netQty = game.flow.roll();
+    this.market.publishFlow({ roomId: game.roomId, t: game.t, netQty });
+    this.io.to(game.roomId).emit('market:flow', {
+      t: game.t,
+      windowSec: game.flow.windowSec,
+      buyRatio: game.flow.buyRatio(),
+      impactPct,
+    });
   }
 
   emitCandle(game, closed) {
