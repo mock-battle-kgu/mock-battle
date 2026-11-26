@@ -249,10 +249,16 @@ export const useGame = () => {
     return response
   }
 
+  const startRoom = ({ roomId }) =>
+    emitWithAck('room:start', {
+      roomId,
+    })
+
   return {
     connectionStatus,
     gameState,
     createRoom,
     joinRoom,
+    startRoom,
   }
 }

@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Home.css'
 
-// 대결 모드 대기실은 v0.3에서 구현 예정. 완성되면 true로 바꿔 방 만들기·입장을 다시 연다
-const BATTLE_AVAILABLE = false
+const BATTLE_AVAILABLE = true
 
 function Home({ createRoom, joinRoom }) {
   const navigate = useNavigate()

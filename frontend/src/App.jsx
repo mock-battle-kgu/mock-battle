@@ -23,6 +23,7 @@ function AppContent() {
     gameState,
     createRoom,
     joinRoom,
+    startRoom,
   } = useGame()
 
   const location = useLocation()
@@ -33,6 +34,12 @@ function AppContent() {
       navigate('/result', { replace: true })
     }
   }, [gameState.result, navigate])
+
+    useEffect(() => {
+    if (gameState.game && location.pathname === '/waiting') {
+      navigate('/game', { replace: true })
+    }
+  }, [gameState.game, location.pathname, navigate])
 
   const statusText = {
     mock: 'Mock 서버 연결',
@@ -65,7 +72,13 @@ function AppContent() {
 
         <Route
           path="/waiting"
-          element={<WaitingRoom />}
+          element={
+            <WaitingRoom
+              room={gameState.room}
+              playerId={gameState.playerId}
+              startRoom={startRoom}
+            />
+          }
         />
 
         <Route
