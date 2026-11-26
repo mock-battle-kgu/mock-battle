@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom'
 import './Result.css'
 
@@ -17,21 +16,26 @@ const formatAsset = (value) => {
   return `${Number(value).toLocaleString('ko-KR')}원`
 }
 
-function Result({ result, playerId, mode }) {
+function Result({ result, playerId, mode, news = [] }) {
   const navigate = useNavigate()
-
-  const myRank = result?.ranks?.find(
-    (rank) => rank.playerId === playerId,
-  )
+  const ranks = result?.ranks ?? []
+  const rumors = result?.rumors ?? []
+  const reveal = result?.reveal
 
   const isPractice =
-    mode === 'practice' || Boolean(result?.reveal)
+    mode === 'practice' || Boolean(reveal)
 
-  const reveal = result?.reveal
+  const myRank = ranks.find(
+    (rank) => rank.playerId === playerId,
+  )
 
   const returnPct = Number(myRank?.returnPct)
   const hasReturn = Number.isFinite(returnPct)
   const isPositive = hasReturn && returnPct >= 0
+
+  const newsById = new Map(
+    news.map((item) => [item.newsId, item]),
+  )
 
   return (
     <main className="result-page">
@@ -47,17 +51,15 @@ function Result({ result, playerId, mode }) {
         </div>
 
         <span className="result-mode">
-          {isPractice ? '연습 모드' : '대전 모드'}
+          {isPractice ? '연습 모드' : '대결 모드'}
         </span>
       </header>
 
-      {!result && (
+      {!result ? (
         <section className="result-empty">
           <div className="result-empty-icon">!</div>
           <h2>아직 게임 결과가 없습니다.</h2>
-          <p>
-            게임이 종료되면 최종 결과를 확인할 수 있습니다.
-          </p>
+          <p>게임이 종료되면 최종 결과를 확인할 수 있습니다.</p>
           <button
             type="button"
             className="result-home-button"
@@ -66,16 +68,14 @@ function Result({ result, playerId, mode }) {
             홈으로 돌아가기
           </button>
         </section>
-      )}
-
-      {result && (
+      ) : (
         <>
           <section className="result-summary">
             <div className="result-summary-heading">
               <span className="result-summary-label">
                 FINAL RESULT
               </span>
-              <h2>최종 투자 성적</h2>
+              <h2>내 최종 성적</h2>
             </div>
 
             {myRank ? (
@@ -116,8 +116,115 @@ function Result({ result, playerId, mode }) {
             )}
           </section>
 
+          <section className="result-section">
+            <div className="result-section-heading">
+              <div>
+                <span className="result-section-label">
+                  FINAL RANKING
+                </span>
+                <h2>최종 순위표</h2>
+              </div>
+            </div>
+
+            {ranks.length > 0 ? (
+              <div className="result-table-wrap">
+                <table className="result-table">
+                  <thead>
+                    <tr>
+                      <th>순위</th>
+                      <th>닉네임</th>
+                      <th>수익률</th>
+                      <th>총자산</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranks.map((rank) => {
+                      const isMe = rank.playerId === playerId
+                      const rankReturn = Number(rank.returnPct)
+                      const hasRankReturn =
+                        Number.isFinite(rankReturn)
+
+                      return (
+                        <tr
+                          key={rank.playerId}
+                          className={isMe ? 'my-result-row' : ''}
+                        >
+                          <td>{rank.rank ?? '—'}위</td>
+                          <td>
+                            {rank.nickname || '참가자'}
+                            {isMe && (
+                              <span className="result-me-badge">
+                                나
+                              </span>
+                            )}
+                          </td>
+                          <td
+                            className={
+                              hasRankReturn
+                                ? rankReturn >= 0
+                                  ? 'result-positive'
+                                  : 'result-negative'
+                                : ''
+                            }
+                          >
+                            {formatReturnPct(rank.returnPct)}
+                          </td>
+                          <td>{formatAsset(rank.totalAsset)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="result-missing">
+                최종 순위 정보가 없습니다.
+              </p>
+            )}
+          </section>
+
+          {!isPractice && (
+            <section className="result-section">
+              <div className="result-section-heading">
+                <div>
+                  <span className="result-section-label">
+                    RUMOR REVEAL
+                  </span>
+                  <h2>루머 공개</h2>
+                </div>
+              </div>
+
+              {rumors.length > 0 ? (
+                <ul className="result-rumor-list">
+                  {rumors.map((rumor, index) => {
+                    const newsItem = newsById.get(rumor.newsId)
+
+                    return (
+                      <li
+                        className="result-rumor-item"
+                        key={`${rumor.newsId}-${rumor.playerId}-${index}`}
+                      >
+                        <span className="result-rumor-headline">
+                          {newsItem?.headline ||
+                            `속보 ${rumor.newsId}`}
+                        </span>
+                        <span>
+                          {rumor.nickname || '참가자'}님의 루머였습니다.
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <p className="result-missing">
+                  공개할 루머가 없습니다.
+                </p>
+              )}
+            </section>
+          )}
+
           {isPractice && (
-            <section className="result-reveal">
+            <section className="result-section">
               <div className="result-section-heading">
                 <div>
                   <span className="result-section-label">
@@ -157,16 +264,22 @@ function Result({ result, playerId, mode }) {
             </section>
           )}
 
-          <section className="result-footer">
-            <p>게임이 종료되었습니다.</p>
+          <footer className="result-footer">
+            <button
+              type="button"
+              className="result-home-button result-secondary-button"
+              onClick={() => navigate('/')}
+            >
+              다시 하기
+            </button>
             <button
               type="button"
               className="result-home-button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/hall-of-fame')}
             >
-              홈으로 돌아가기
+              명예의 전당
             </button>
-          </section>
+          </footer>
         </>
       )}
     </main>
