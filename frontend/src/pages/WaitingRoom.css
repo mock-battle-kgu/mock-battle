@@ -1,0 +1,254 @@
+.waiting-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 20px;
+  color: #182230;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 224, 204, 0.55), transparent 30%),
+    radial-gradient(circle at 90% 90%, rgba(198, 223, 255, 0.65), transparent 32%),
+    #f3f6fb;
+}
+
+.waiting-card {
+  width: min(100%, 620px);
+  padding: 40px;
+  border: 1px solid #e4e9f1;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(25, 43, 72, 0.12);
+}
+
+.waiting-header {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.waiting-eyebrow,
+.waiting-section-label {
+  margin: 0 0 9px;
+  color: #718096;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+}
+
+.waiting-header h1 {
+  margin: 0 0 9px;
+  font-size: clamp(26px, 5vw, 34px);
+  letter-spacing: -1px;
+}
+
+.waiting-header > p:last-child,
+.waiting-footer > p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+.waiting-pin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid #dce7ff;
+  border-radius: 16px;
+  background: #f4f7ff;
+}
+
+.waiting-pin strong {
+  display: block;
+  color: #214cba;
+  font-size: clamp(34px, 8vw, 48px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 8px;
+  line-height: 1.1;
+}
+
+.copy-button,
+.start-button {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-button {
+  flex: 0 0 auto;
+  color: #24458f;
+  background: #e2eaff;
+}
+
+.waiting-roster {
+  margin-top: 30px;
+}
+
+.waiting-roster-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.waiting-roster-heading h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.player-count {
+  color: #617087;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.player-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 14px;
+  border: 1px solid #edf0f5;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.player-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  margin-right: 11px;
+  place-items: center;
+  border-radius: 50%;
+  color: #3454a1;
+  background: #edf2ff;
+  font-weight: 800;
+}
+
+.player-name {
+  font-weight: 700;
+}
+
+.me-tag,
+.host-tag {
+  margin-left: 8px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #52627a;
+  background: #f1f4f8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.host-tag {
+  margin-left: auto;
+  color: #9a5b12;
+  background: #fff2db;
+}
+
+.connection-dot {
+  width: 9px;
+  height: 9px;
+  margin-left: 11px;
+  border-radius: 50%;
+  background: #2fb675;
+}
+
+.connection-dot.offline {
+  background: #c5ccd7;
+}
+
+.waiting-empty-roster {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed #d9e0ea;
+  border-radius: 12px;
+  color: #718096;
+  text-align: center;
+}
+
+.waiting-footer {
+  display: grid;
+  gap: 14px;
+  margin-top: 26px;
+  text-align: center;
+}
+
+.start-button {
+  width: 100%;
+  color: #fff;
+  background: #2458d3;
+  font-size: 16px;
+}
+
+.start-button:hover:not(:disabled) {
+  background: #1947b4;
+}
+
+.start-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.host-waiting {
+  padding: 15px;
+  border-radius: 10px;
+  color: #52627a;
+  background: #f3f5f8;
+  font-size: 14px;
+}
+
+.waiting-error {
+  margin: 0;
+  color: #c33b3b;
+  font-size: 13px;
+}
+
+.waiting-empty {
+  text-align: center;
+}
+
+.waiting-empty h1 {
+  font-size: 24px;
+}
+
+.waiting-empty > p:last-child {
+  color: #718096;
+}
+
+@media (max-width: 520px) {
+  .waiting-page {
+    align-items: flex-start;
+    padding: 24px 14px;
+  }
+
+  .waiting-card {
+    padding: 28px 20px;
+    border-radius: 18px;
+  }
+
+  .waiting-pin {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .waiting-pin strong {
+    letter-spacing: 6px;
+  }
+
+  .copy-button {
+    width: 100%;
+  }
+}
