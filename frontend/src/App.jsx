@@ -20,9 +20,12 @@ import './App.css'
 function AppContent() {
   const {
     connectionStatus,
+    rejoinStatus,
     gameState,
     createRoom,
     joinRoom,
+    placeOrder,
+    leaveGame,
   } = useGame()
 
   const location = useLocation()
@@ -34,15 +37,22 @@ function AppContent() {
     }
   }, [gameState.result, navigate])
 
+  // 게임이 시작되거나(대기실) 새로고침 뒤 다시 붙으면 게임 화면으로
+  const hasGame = Boolean(gameState.game)
+  useEffect(() => {
+    if (hasGame && !gameState.result && ['/', '/waiting'].includes(location.pathname)) {
+      navigate('/game', { replace: true })
+    }
+  }, [hasGame, gameState.result, location.pathname, navigate])
+
   const statusText = {
     mock: 'Mock 서버 연결',
     connected: '서버 연결됨',
     disconnected: '서버 연결 끊김',
   }
 
-  // 게임 화면에서는 가리고, 연결이 끊기면 어느 화면에서든 표시
-  const showStatus =
-    location.pathname !== '/game' || connectionStatus === 'disconnected'
+  // 게임 화면은 상단 바에 연결 상태가 있으므로 가린다
+  const showStatus = location.pathname !== '/game'
 
   return (
     <div>
@@ -70,7 +80,15 @@ function AppContent() {
 
         <Route
           path="/game"
-          element={<Game gameState={gameState} />}
+          element={
+            <Game
+              gameState={gameState}
+              connectionStatus={connectionStatus}
+              rejoinStatus={rejoinStatus}
+              placeOrder={placeOrder}
+              leaveGame={leaveGame}
+            />
+          }
         />
 
         <Route
@@ -83,6 +101,7 @@ function AppContent() {
                 gameState.game?.mode ||
                 gameState.room?.mode
               }
+              onHome={leaveGame}
             />
           }
         />
