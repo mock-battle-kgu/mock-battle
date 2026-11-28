@@ -140,3 +140,29 @@ hotfix/내용    main에서 발견한 긴급 버그 수정 (예: hotfix/login-er
 |  |  | 시세 엔진 |
 |  |  | API·DB |
 |  |  | 인프라·CI |
+
+### v0.3: stocks schema and integration tests
+
+v0.3 adds the `stocks` table to `db/init.sql`. MySQL only executes the init
+scripts when its data directory is first initialized. If you already have
+an older development database volume, back up any game results you want to
+keep, then reset **only the intended Compose project**:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+**Warning:** `down -v` permanently deletes that project's database volume,
+including previously saved game results. It is not required when starting
+with a fresh project/volume.
+
+The v0.3 GitHub Actions workflow `.github/workflows/ci-v03-checks.yml` starts
+all six services and verifies that `GET /api/stocks` returns six ordered
+stocks, that Socket.IO emits `stock:info` and `orderbook:update`, and that
+buying through a shared order book raises the second player's fill price.
+This workflow is expected to pass **only after** the upstream protocol,
+market-fundamentals, API-stocks and game-orderbook PRs are merged.
+The F-stage Compose workflow separately checks game completion and MySQL
+result persistence.
+
