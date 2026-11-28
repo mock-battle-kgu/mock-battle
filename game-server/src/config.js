@@ -19,6 +19,9 @@ module.exports = {
   backupGraceSec: 5,
   // 게임이 끝난 뒤 방을 지우기까지 기다리는 시간(밀리초)
   endedRoomTtlMs: 30_000,
+  // 결과 저장이 실패하면 2초 간격으로 3번까지 보낸다
+  resultRetries: 3,
+  resultRetryDelayMs: 2000,
   // 연습 모드 시나리오 폴더 (로컬: 저장소의 scenarios/, Docker: /app/scenarios)
   scenarioDir: process.env.SCENARIO_DIR || path.resolve(__dirname, '../../scenarios'),
   // index.json을 못 읽을 때만 쓰는 예비 목록
