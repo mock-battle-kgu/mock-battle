@@ -15,6 +15,8 @@ import FinanceDataReader as fdr
 DAYS = 120
 # 실제 가격을 숨기기 위해 첫날 종가를 이 값으로 맞춤
 BASE_PRICE = 10000
+# 실제 거래량을 숨기기 위해 첫 20거래일 평균 거래량을 이 값으로 맞춤
+BASE_VOLUME = 100000
 
 # 시나리오 목록: id는 게임 서버가 scenarioId로 보내는 값
 # fundamentals: 시나리오 시작 직전 사업연도의 실제 지표 (연습 모드 PER·PBR 표시용, 가이드 4-5)
@@ -55,21 +57,25 @@ def round10(value):
 
 
 def build_rows(df):
-    """일봉 데이터를 비율은 유지한 채 첫 종가 10,000원 기준으로 바꿈"""
-    df = df[["Open", "High", "Low", "Close"]]
+    """일봉 데이터를 비율은 유지한 채 첫 종가 10,000원 기준으로 바꿈
+    거래량은 첫 20거래일 평균이 100,000주가 되도록 비율만 유지해서 바꿈 (가이드 4-6)
+    """
+    df = df[["Open", "High", "Low", "Close", "Volume"]]
     # 거래가 없는 날(시가 0 등)은 제외
-    df = df[(df > 0).all(axis=1)].head(DAYS)
+    df = df[(df[["Open", "High", "Low", "Close"]] > 0).all(axis=1)].head(DAYS)
     if len(df) < DAYS:
         raise ValueError(f"거래일이 {len(df)}일뿐입니다. {DAYS}일이 필요합니다.")
 
     scale = BASE_PRICE / df["Close"].iloc[0]
+    vscale = BASE_VOLUME / df["Volume"].head(20).mean()
     rows = []
     for date, r in df.iterrows():
         o, h, l, c = (round10(r[k] * scale) for k in ("Open", "High", "Low", "Close"))
         # 반올림 후에도 고가는 가장 높고, 저가는 가장 낮게 유지
         h = max(h, o, c)
         l = min(l, o, c)
-        rows.append([date.strftime("%Y-%m-%d"), o, h, l, c])
+        v = int(round(r["Volume"] * vscale))
+        rows.append([date.strftime("%Y-%m-%d"), o, h, l, c, v])
     return rows
 
 
@@ -101,7 +107,7 @@ def main():
         file_name = f"{s['id']}.csv"
         with open(SCENARIO_DIR / file_name, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, lineterminator="\n")
-            writer.writerow(["date", "open", "high", "low", "close"])
+            writer.writerow(["date", "open", "high", "low", "close", "volume"])
             writer.writerows(rows)
 
         first, last = rows[0][0], rows[-1][0]

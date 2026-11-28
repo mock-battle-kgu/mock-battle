@@ -5,6 +5,7 @@ const { makeFundamentals, scaleScenarioFundamentals } = require("./model/Fundame
 const { Replay, PRACTICE_CODE } = require("./model/Replay");
 const NewsEngine = require("./model/NewsEngine");
 const FlowImpact = require("./model/FlowImpact");
+const VolumeModel = require("./model/VolumeModel");
 
 class MarketRoom {
   /**
@@ -32,6 +33,7 @@ class MarketRoom {
     this.model = null;
     this.news = null;
     this.flow = null;
+    this.volume = null;
     this.replay = null;
     this.fundamentals = null;
     if (this.mode === "battle") {
@@ -45,6 +47,8 @@ class MarketRoom {
       // 가격과 다른 난수 흐름을 써서, 뉴스가 있어도 기본 가격 움직임은 시드대로 유지
       this.news = new NewsEngine({ codes: this.stocks, seed: (this.seed ^ 0x9e3779b9) >>> 0 });
       this.flow = new FlowImpact({ codes: this.stocks });
+      // 거래량용 난수도 가격용과 따로 사용
+      this.volume = new VolumeModel({ codes: this.stocks, seed: this.seed + 2 });
     } else if (this.mode === "practice") {
       this.replay = Replay.load(this.scenarioId);
       // 실제 지표를 가격과 같은 비율로 줄여서 보냄 (적정가 회귀는 없음)
@@ -52,6 +56,13 @@ class MarketRoom {
     }
     this.prices = this.currentPrices();
     this.impactPct = this.zeroImpact();
+    this.volumes = this.currentVolumes(); // t=0은 0
+  }
+
+  // 연습 모드 거래량 (대결 모드는 tick에서 가격 변화로 계산)
+  currentVolumes() {
+    if (this.replay) return { [PRACTICE_CODE]: this.replay.volumeAt(this.t) };
+    return this.zeroImpact();
   }
 
   zeroImpact() {
@@ -89,9 +100,12 @@ class MarketRoom {
       this.impactPct = this.flow.impactAt(this.t);
       const flowExtra = this.flow.extraFrom(this.impactPct);
       for (const code in flowExtra) extra[code] = (extra[code] || 0) + flowExtra[code];
+      const before = this.prices;
       this.prices = this.model.step(extra);
+      this.volumes = this.volume.step(before, this.prices);
     } else {
       this.prices = this.currentPrices();
+      this.volumes = this.currentVolumes();
     }
     // 2) 새 뉴스는 이번 틱보다 먼저 발행 → 가격에는 다음 틱부터 반영
     const news = this.news ? this.news.emit(this.t, this.durationSec) : null;

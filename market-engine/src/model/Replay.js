@@ -18,6 +18,8 @@ function parseCsv(text) {
     return i;
   };
   const cols = { date: col("date"), open: col("open"), high: col("high"), low: col("low"), close: col("close") };
+  // volume 열은 선택 (예전 CSV에는 없음 → 0으로 처리)
+  const volumeCol = header.indexOf("volume");
 
   return lines.slice(1).map((line, n) => {
     const cells = line.split(",");
@@ -28,6 +30,8 @@ function parseCsv(text) {
         throw new Error(`CSV ${n + 2}번째 줄의 ${key} 값이 잘못됨`);
       }
     }
+    const volume = volumeCol === -1 ? 0 : Number(cells[volumeCol]);
+    day.volume = Number.isFinite(volume) && volume > 0 ? Math.round(volume) : 0;
     return day;
   });
 }
@@ -58,6 +62,16 @@ class Replay {
     if (!scenario) throw new Error(`없는 시나리오: ${scenarioId}`);
     const days = parseCsv(fs.readFileSync(path.join(dir, scenario.file), "utf8"));
     return new Replay(days, scenario);
+  }
+
+  // t번째 틱의 거래량 (가이드 4-6): 하루 거래량을 틱 5개에 1/5씩, 나머지는 마지막 틱에
+  // → 틱 5개를 더하면 그날 거래량과 같음. t=0(시작가)과 데이터가 끝난 뒤는 0
+  volumeAt(t) {
+    if (t <= 0 || t > this.days.length * TICKS_PER_DAY) return 0;
+    const day = this.days[Math.floor((t - 1) / TICKS_PER_DAY)];
+    const share = Math.floor(day.volume / TICKS_PER_DAY);
+    const isLast = t % TICKS_PER_DAY === 0;
+    return isLast ? day.volume - share * (TICKS_PER_DAY - 1) : share;
   }
 
   // t=0은 첫날 시가(시작가), t=1부터 하루에 틱 5개씩

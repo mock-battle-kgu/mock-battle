@@ -51,6 +51,7 @@ async function main() {
         t: room.t,
         prices: room.prices,
         impactPct: room.impactPct,
+        volumes: room.volumes, // 이번 1초 종목별 시장 거래량 (가이드 4-6)
       };
       // t=0에만 종목 지표 포함 (가이드 4-5, 적정가 자체는 보내지 않음)
       if (room.t === 0 && room.fundamentals) tick.fundamentals = room.fundamentals;

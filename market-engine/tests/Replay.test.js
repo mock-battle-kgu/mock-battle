@@ -48,7 +48,8 @@ describe("Replay", () => {
   test("CSV를 읽어 거래일 목록으로 바꿈", () => {
     const days = parseCsv(SAMPLE_CSV);
     expect(days.length).toBe(3);
-    expect(days[1]).toEqual({ date: "2020-01-03", open: 10000, high: 10300, low: 9950, close: 10250 });
+    // volume 열이 없는 CSV라 거래량은 0
+    expect(days[1]).toEqual({ date: "2020-01-03", open: 10000, high: 10300, low: 9950, close: 10250, volume: 0 });
   });
 
   test("값이 잘못된 CSV는 오류", () => {
