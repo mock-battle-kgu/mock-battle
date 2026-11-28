@@ -118,7 +118,7 @@ describe("MarketRoom", () => {
       const good = news.find((n) => n.effectPct >= 4);
       if (!good) continue;
 
-      const base = new PriceModel({ codes: ["SAAH"], seed });
+      const base = new PriceModel({ codes: ["SAAH"], seed, fundamentals: room.fundamentals });
       const baseHistory = [base.snapshot()];
       for (let t = 1; t <= 600; t++) baseHistory.push(base.step());
 
@@ -166,5 +166,28 @@ describe("MarketRoom", () => {
     expect(room.addFlow(1, { STOCK_A: 1000 })).toBe(false);
     jest.advanceTimersByTime(3000);
     expect(room.impactPct).toEqual({ STOCK_A: 0 });
+  });
+
+  test("대결 모드: 판마다 종목 지표가 생기고 sector·eps·bps·sectorPer가 있음", () => {
+    const { room } = createRoom({ stocks: ["GANA", "DARA"], seed: 3 });
+    expect(Object.keys(room.fundamentals)).toEqual(["GANA", "DARA"]);
+    for (const code of ["GANA", "DARA"]) {
+      const f = room.fundamentals[code];
+      expect(["sector", "eps", "bps", "sectorPer"].every((k) => k in f)).toBe(true);
+    }
+  });
+
+  test("대결 모드: 같은 시드면 같은 지표, 다른 시드면 다를 수 있음", () => {
+    const a = createRoom({ stocks: ["GANA"], seed: 5 }).room.fundamentals;
+    const b = createRoom({ stocks: ["GANA"], seed: 5 }).room.fundamentals;
+    expect(a).toEqual(b);
+  });
+
+  test("연습 모드: 지표에 sector가 없음 (시나리오에 지표가 없으면 null)", () => {
+    const { room } = createRoom({ mode: "practice", stocks: [], scenarioId: "covid-2020" });
+    if (room.fundamentals !== null) {
+      expect(Object.keys(room.fundamentals)).toEqual(["STOCK_A"]);
+      expect(room.fundamentals.STOCK_A.sector).toBe(undefined);
+    }
   });
 });

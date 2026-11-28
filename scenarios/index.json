@@ -6,7 +6,14 @@
       "name": "삼성전자",
       "code": "005930",
       "period": "2020-01 ~ 2020-06",
-      "days": 120
+      "days": 120,
+      "firstClose": 55200,
+      "fundamentals": {
+        "sector": "반도체",
+        "eps": 3166,
+        "bps": 37528,
+        "sectorPer": 15
+      }
     },
     {
       "id": "chip-2024",
@@ -14,7 +21,14 @@
       "name": "SK하이닉스",
       "code": "000660",
       "period": "2024-01 ~ 2024-06",
-      "days": 120
+      "days": 120,
+      "firstClose": 142400,
+      "fundamentals": {
+        "sector": "반도체",
+        "eps": -13244,
+        "bps": 73495,
+        "sectorPer": 15
+      }
     },
     {
       "id": "platform-2021",
@@ -22,7 +36,14 @@
       "name": "카카오",
       "code": "035720",
       "period": "2021-06 ~ 2021-11",
-      "days": 120
+      "days": 120,
+      "firstClose": 127000,
+      "fundamentals": {
+        "sector": "인터넷 플랫폼",
+        "eps": 368,
+        "bps": 14220,
+        "sectorPer": 40
+      }
     },
     {
       "id": "battery-2023",
@@ -30,7 +51,14 @@
       "name": "에코프로",
       "code": "086520",
       "period": "2023-01 ~ 2023-06",
-      "days": 120
+      "days": 120,
+      "firstClose": 21582,
+      "fundamentals": {
+        "sector": "2차전지 소재",
+        "eps": 278,
+        "bps": 9959,
+        "sectorPer": 50
+      }
     }
   ]
 }

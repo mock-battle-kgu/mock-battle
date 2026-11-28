@@ -17,11 +17,32 @@ DAYS = 120
 BASE_PRICE = 10000
 
 # 시나리오 목록: id는 게임 서버가 scenarioId로 보내는 값
+# fundamentals: 시나리오 시작 직전 사업연도의 실제 지표 (연습 모드 PER·PBR 표시용, 가이드 4-5)
+#   - eps, bps는 FinanceDataReader 가격과 같은 기준(액면분할 반영 후)이어야 PER이 맞음
+#   - 실행 후 출력되는 "실제 PER"이 알려진 값과 크게 다르면 기준이 어긋난 것
+#   - sectorPer(업종 평균 PER)는 비교용 근사값, 적정가 회귀에는 쓰지 않음
 SCENARIOS = [
-    {"id": "covid-2020", "code": "005930", "name": "삼성전자", "start": "2020-01-02"},
-    {"id": "chip-2024", "code": "000660", "name": "SK하이닉스", "start": "2024-01-02"},
-    {"id": "platform-2021", "code": "035720", "name": "카카오", "start": "2021-06-01"},
-    {"id": "battery-2023", "code": "086520", "name": "에코프로", "start": "2023-01-02"},
+    {
+        "id": "covid-2020", "code": "005930", "name": "삼성전자", "start": "2020-01-02",
+        # 2019년 연결: 지배주주 순이익 기준 기본 EPS, 지배주주 자본 ÷ 발행주식수(보통+우선)
+        "fundamentals": {"sector": "반도체", "eps": 3166, "bps": 37528, "sectorPer": 15},
+    },
+    {
+        "id": "chip-2024", "code": "000660", "name": "SK하이닉스", "start": "2024-01-02",
+        # 2023년 연결: 적자(EPS 음수) → 화면에서는 PER 대신 "적자"로 표시해야 함
+        "fundamentals": {"sector": "반도체", "eps": -13244, "bps": 73495, "sectorPer": 15},
+    },
+    {
+        "id": "platform-2021", "code": "035720", "name": "카카오", "start": "2021-06-01",
+        # 2020년 연결: 기본 EPS 1,838원 ÷ 5 (2021년 4월 5:1 액면분할 반영)
+        # bps: 지배주주 자본 6조 2,989억 ÷ 분할 후 주식수(약 4.43억 주) = 근사값
+        "fundamentals": {"sector": "인터넷 플랫폼", "eps": 368, "bps": 14220, "sectorPer": 40},
+    },
+    {
+        "id": "battery-2023", "code": "086520", "name": "에코프로", "start": "2023-01-02",
+        # 2022년 연결 (시작 직전 사업연도), 2024년 5:1 액면분할 반영 기준 (네이버 증권 투자지표)
+        "fundamentals": {"sector": "2차전지 소재", "eps": 278, "bps": 9959, "sectorPer": 50},
+    },
 ]
 
 # 저장소 최상위의 scenarios/ 폴더 (어디서 실행해도 같은 위치)
@@ -52,6 +73,22 @@ def build_rows(df):
     return rows
 
 
+def first_close_of(df):
+    """build_rows와 같은 기준(거래 없는 날 제외)의 실제 첫날 종가"""
+    df = df[["Open", "High", "Low", "Close"]]
+    df = df[(df > 0).all(axis=1)]
+    return int(df["Close"].iloc[0])
+
+
+def print_check(s, first_close):
+    """실제 PER·PBR을 출력해서 지표 기준(액면분할 등)이 맞는지 눈으로 확인"""
+    f = s.get("fundamentals") or {}
+    eps, bps = f.get("eps"), f.get("bps")
+    per = f"{first_close / eps:.1f}" if eps and eps > 0 else ("적자" if eps else "미입력")
+    pbr = f"{first_close / bps:.2f}" if bps else "미입력"
+    print(f"    실제 첫 종가 {first_close:,}원 → PER {per}, PBR {pbr}")
+
+
 def main():
     SCENARIO_DIR.mkdir(exist_ok=True)
     index = []
@@ -68,6 +105,7 @@ def main():
             writer.writerows(rows)
 
         first, last = rows[0][0], rows[-1][0]
+        first_close = first_close_of(df)
         index.append({
             "id": s["id"],
             "file": file_name,
@@ -75,8 +113,11 @@ def main():
             "code": s["code"],
             "period": f"{first[:7]} ~ {last[:7]}",
             "days": len(rows),
+            "firstClose": first_close,  # 실제 첫날 종가 (지표를 가격과 같은 비율로 줄일 때 사용)
+            "fundamentals": s.get("fundamentals"),
         })
         print(f"  → {file_name} 저장 ({first} ~ {last}, {len(rows)}일)")
+        print_check(s, first_close)
 
     with open(SCENARIO_DIR / "index.json", "w", encoding="utf-8", newline="\n") as f:
         json.dump({"scenarios": index}, f, ensure_ascii=False, indent=2)
